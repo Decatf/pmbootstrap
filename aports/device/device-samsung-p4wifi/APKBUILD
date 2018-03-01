@@ -7,7 +7,7 @@ url="https://postmarketos.org"
 license="MIT"
 arch="noarch"
 options="!check"
-depends="linux-samsung-p4wifi mkbootimg mesa-dri-swrast"
+depends="postmarketos-base firmware-samsung-p4wifi linux-samsung-p4wifi mkbootimg mesa-dri-swrast"
 makedepends="devicepkg-dev"
 source="deviceinfo"
 
@@ -19,5 +19,4 @@ package() {
 	devicepkg_package $startdir $pkgname
 }
 
-sha512sums="(run 'pmbootstrap checksum device-samsung-p4wifi' to fill)"
-
+sha512sums="51025b6d7c6fa5b088296c875cfb7342889a78ad73b163db9b0ec88ac919a788ef6eb150c5e46d7a7c2c461e9117fb07b4999e69d948ca0a782a2027dabedec7  deviceinfo"
