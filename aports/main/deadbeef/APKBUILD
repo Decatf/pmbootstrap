@@ -1,0 +1,60 @@
+pkgname=deadbeef
+pkgver=0.7.2
+pkgrel=0
+pkgdesc="DeaDBeeF Player"
+url="http://deadbeef.sf.net"
+arch="armhf"
+license="GPL2"
+depends="alsa-lib jansson libsndfile gtk+2.0 glib libsm libice libmad"
+makedepends="automake autoconf gettext-dev intltool libtool m4
+	alsa-lib-dev bsd-compat-headers curl-dev jansson-dev libzip-dev zlib-dev
+	faad2-dev ffmpeg-dev libmad-dev libsamplerate-dev libsndfile-dev opus-dev opusfile-dev wavpack-dev
+	gtk+2.0-dev glib-dev libsm-dev libice-dev"
+subpackages=""
+_rev="e346ad960aef7e68ef29a75a0a921b4bd544a8d4"
+source="https://github.com/DeaDBeeF-Player/deadbeef/archive/$_rev.zip
+	get-config.rpath-for-pmOS.patch"
+builddir="$srcdir/${pkgname}-${_rev}"
+
+prepare() {
+	local _patch_failed=
+	cd "$builddir"
+	# first apply patches in specified order
+	for i in $source; do
+		case $i in
+		*.patch|*.patch::*)
+			_patch=${i%::*}
+			msg "Applying $_patch..."
+			if ! patch -s -p1 -N -i "$srcdir"/$_patch; then
+				echo $_patch >>failed
+				_patch_failed=1
+			fi
+			;;
+		esac
+	done
+
+	if ! [ -z "$_patch_failed" ]; then
+		error "The following patches failed:"
+		cat failed
+		return 1
+	fi
+}
+
+build(){
+	export CFLAGS="-Wno-narrowing"
+	export CXXFLAGS="-Wno-narrowing"
+	cd "$builddir"
+	./autogen.sh
+	./configure \
+		--prefix=/usr \
+		--enable-gtk2
+	make
+}
+
+package() {
+	cd "$builddir"
+	make PREFIX=/usr DESTDIR="$pkgdir" install
+}
+
+sha512sums="aa81ec54687439ba639d104d015da81051c760b04418553a99c337be9cca1a111fa60d448cff37629741e6999e177127bbe78335297910399029d1e95b20024b  e346ad960aef7e68ef29a75a0a921b4bd544a8d4.zip
+046d1e8946665d8e78f7770e300b7ded4ce607eb63b9089b0211e04739ed26807b8b91bd45e92076cedf1b2846a8d36c0f8e11ea8d6c2065c390c18dc910ee40  get-config.rpath-for-pmOS.patch"
