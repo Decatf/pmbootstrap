@@ -2,13 +2,14 @@
 pkgname="device-samsung-p4wifi"
 pkgdesc="Galaxy Tab 10.1"
 pkgver=0.1
-pkgrel=0
+pkgrel=1
 url="https://postmarketos.org"
 license="MIT"
 arch="noarch"
 options="!check"
-depends="postmarketos-base firmware-samsung-p4wifi linux-samsung-p4wifi mkbootimg mesa-dri-swrast"
+depends="postmarketos-base linux-samsung-p4wifi mkbootimg mesa-dri-swrast"
 makedepends="devicepkg-dev"
+subpackages="$pkgname-nonfree-firmware:nonfree_firmware"
 source="deviceinfo"
 
 build() {
@@ -17,6 +18,12 @@ build() {
 
 package() {
 	devicepkg_package $startdir $pkgname
+}
+
+nonfree_firmware() {
+	pkgdesc="bcm4330 wifi firmware"
+	depends="firmware-samsung-p4wifi"
+	mkdir "$subpkgdir"
 }
 
 sha512sums="51025b6d7c6fa5b088296c875cfb7342889a78ad73b163db9b0ec88ac919a788ef6eb150c5e46d7a7c2c461e9117fb07b4999e69d948ca0a782a2027dabedec7  deviceinfo"
