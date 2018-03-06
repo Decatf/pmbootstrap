@@ -1,0 +1,91 @@
+_provides_pkgname=libdrm
+pkgname=libdrm-grate
+pkgver=2.4.89
+pkgrel=8
+pkgdesc="Userspace interface to kernel DRM services"
+url="https://www.github.com/grate-driver/"
+arch="all"
+# Requires a computer with gfx, no X running, build user in 'video' group..
+options="!check"
+license="MIT"
+depends=""
+depends_dev="linux-headers"
+makedepends="$depends_dev libpthread-stubs eudev-dev libpciaccess-dev xmlto
+	libtool m4 automake autoconf
+	util-macros
+	"
+checkdepends="cunit-dev bash"
+subpackages="$pkgname-dev $pkgname-doc"
+source="https://dri.freedesktop.org/$_provides_pkgname/$_provides_pkgname-$pkgver.tar.bz2
+	ioctl.patch
+	fix-symbol-checks.patch
+	0001-grate-driver.patch
+	"
+replaces="$_provides_pkgname $_provides_pkgname-dev $_provides_pkgname-doc"
+provides="$_provides_pkgname"
+builddir="$srcdir/$_provides_pkgname-$pkgver"
+
+prepare() {
+	cd "$builddir"
+	for i in $source; do
+		case $i in
+		*.patch) msg $i; patch -p1 -i "$srcdir"/$i;;
+		esac
+	done
+	libtoolize --force \
+		&& aclocal \
+		&& automake --add-missing \
+		&& autoreconf
+}
+
+build() {
+	cd "$builddir"
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--mandir=/usr/share/man \
+		--localstatedir=/var \
+		--enable-tegra-experimental-api \
+		--enable-freedreno \
+		--enable-vmwgfx \
+		--enable-nouveau \
+		--enable-amdgpu \
+		--enable-radeon \
+		--enable-intel \
+		--disable-vc4 \
+		--enable-udev \
+		--disable-valgrind
+	make
+}
+
+check() {
+	cd "$builddir"
+	make check
+}
+
+package() {
+	cd "$builddir"
+	make DESTDIR="$pkgdir" install
+}
+
+override_package() {
+	provides="${subpkgname/${pkgname}/${_provides_pkgname}}"
+	replaces="${subpkgname/${pkgname}/${_provides_pkgname}}"
+}
+
+dev() {
+	default_dev
+	override_package
+}
+
+doc() {
+	default_doc
+	override_package
+}
+
+sha512sums="380e4e46cd3971a73264bd1b482791fab0503268adb65ac81b674df009662cfb8ef5741e362f19670b2a43b1c46f022d857706c9a4bebed2b1cddaa317b7706d  libdrm-2.4.89.tar.bz2
+af52fef51aaa05a4dd17919371cb9d92a77480402730bf53ba223e54df52f3825be05a7f28e6aef8c904db5ee59fe38a6c15bc6aafa7f8d31a719e80399dd51f  ioctl.patch
+fe85537761fa8e7a168c2fbfcb6092ba3c34275c2eaa6c8ce2803ccc769a797350f8deacefc94a3479ebef51800808cdd4b4554eee14c1cd8b6f2cc159ab467e  fix-symbol-checks.patch
+984d3f728a9c78482bf3ca267a57bb9c1e4f044d0027f9bde78cac05631ef315d82b673ee3b1891eb32b7235d4aa51ffe268b676c413a136e8c9ab29c1d60cc8  0001-grate-driver.patch"
