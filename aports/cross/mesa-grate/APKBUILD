@@ -1,5 +1,4 @@
-_provides_pkgname=mesa
-pkgname=mesa-grate
+pkgname=mesa
 pkgver=17.2.4
 pkgrel=10
 pkgdesc="Mesa DRI OpenGL library"
@@ -32,9 +31,7 @@ source="https://github.com/grate-driver/mesa/archive/$branch.tar.gz
 	0004-musl-fixes.patch
 	0001-PATCH-Simplify-wayland-scanner-lookup.patch
 	"
-replaces="mesa-dricore mesa mesa-dev mesa-doc mesa-xatracker mesa-osmesa"
-provides="$_provides_pkgname"
-
+replaces="mesa-dricore"
 
 _dri_driverdir=/usr/lib/xorg/modules/dri
 _dri_drivers="swrast"
@@ -123,24 +120,9 @@ package() {
 	make -j1 DESTDIR="$pkgdir" install
 }
 
-override_package() {
-	provides="${subpkgname/${pkgname}/${_provides_pkgname}}"
-}
-
-dev() {
-	default_dev
-	override_package
-}
-
-doc() {
-	default_doc
-	override_package
-}
-
 egl() {
 	pkgdesc="Mesa libEGL runtime libraries"
-	replaces="mesa mesa-dev mesa-doc"
-	override_package
+	replaces="mesa"
 
 	install -d "$subpkgdir"/usr/lib
 	mv "$pkgdir"/usr/lib/libEGL.so* "$subpkgdir"/usr/lib/
@@ -148,8 +130,7 @@ egl() {
 
 gl() {
 	pkgdesc="Mesa libGL runtime libraries"
-	replaces="mesa mesa-dev mesa-doc"
-	override_package
+	replaces="mesa"
 
 	install -d "$subpkgdir"/usr/lib
 	mv "$pkgdir"/usr/lib/libGL.so* "$subpkgdir"/usr/lib/
@@ -158,7 +139,6 @@ gl() {
 glapi() {
 	pkgdesc="Mesa shared glapi"
 	replaces="$pkgname-gles"
-	override_package
 
 	install -d "$subpkgdir"/usr/lib
 	mv "$pkgdir"/usr/lib/libglapi.so.* "$subpkgdir"/usr/lib/
@@ -166,8 +146,7 @@ glapi() {
 
 gles() {
 	pkgdesc="Mesa libGLESv2 runtime libraries"
-	replaces="mesa mesa-dev mesa-doc"
-	override_package
+	replaces="mesa"
 
 	install -d "$subpkgdir"/usr/lib
 	mv "$pkgdir"/usr/lib/libGLES*.so* "$subpkgdir"/usr/lib/
@@ -175,8 +154,7 @@ gles() {
 
 xatracker() {
 	pkgdesc="Mesa XA state tracker for vmware"
-	replaces="mesa mesa-dev mesa-doc"
-	override_package
+	replaces="mesa"
 
 	install -d "$subpkgdir"/usr/lib
 	mv "$pkgdir"/usr/lib/libxatracker*.so.* "$subpkgdir"/usr/lib/
@@ -184,8 +162,7 @@ xatracker() {
 
 osmesa() {
 	pkgdesc="Mesa offscreen rendering libraries"
-	replaces="mesa mesa-dev mesa-doc"
-	override_package
+	replaces="mesa"
 
 	install -d "$subpkgdir"/usr/lib
 	mv "$pkgdir"/usr/lib/libOSMesa.so.* "$subpkgdir"/usr/lib/
@@ -193,8 +170,7 @@ osmesa() {
 
 gbm() {
 	pkgdesc="Mesa gbm library"
-	replaces="mesa mesa-dev mesa-doc"
-	override_package
+	replaces="mesa"
 
 	install -d "$subpkgdir"/usr/lib
 	mv "$pkgdir"/usr/lib/libgbm.so.* "$subpkgdir"/usr/lib/
@@ -234,7 +210,6 @@ _mv_gpipe() {
 _dri() {
 	local n=${subpkgname##*-dri-}
 	pkgdesc="Mesa DRI driver for $n"
-	override_package
 
 	case $n in
 	ati)
@@ -270,7 +245,6 @@ _dri() {
 
 _wayland() {
 	pkgdesc="Mesa libwayland-egl library"
-	override_package
 
 	mkdir -p "$subpkgdir"/usr/lib
 	mv "$pkgdir"/usr/lib/libwayland-egl.so.* "$subpkgdir"/usr/lib/
