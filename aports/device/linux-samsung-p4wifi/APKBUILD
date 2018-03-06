@@ -2,7 +2,7 @@
 
 pkgname="linux-samsung-p4wifi"
 pkgver=4.14.0
-pkgrel=0
+pkgrel=1
 pkgdesc="Galaxy Tab 10.1 kernel"
 arch="armhf"
 _carch="arm"
@@ -75,6 +75,15 @@ package() {
 		error "Could not find zImage in $PWD!"
 		return 1
 	fi
+
+	# Modules
+	cd "$builddir"
+	unset LDFLAGS
+	make ARCH="$_carch" CC="${CC:-gcc}" \
+		CONFIG_NO_ERROR_ON_MISMATCH=y \
+		KBUILD_BUILD_VERSION="$((pkgrel + 1))-postmarketOS" \
+		INSTALL_MOD_PATH="$pkgdir" INSTALL_MOD_STRIP=1 \
+		modules_install
 }
 
 sha512sums="6bf209fb92b5da9f1a633b12701719bcb5576d128fa104e812a4e640737b827e3294cf1ccde4c7d0a8e410b990974bfb3b9f4151f7d7c13c9a37f2e586bd7cbe  linux-samsung-p4wifi-742ba99a0bde5734d5ba9ef0361e3747773c05f3.tar.gz
