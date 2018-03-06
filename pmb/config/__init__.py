@@ -157,7 +157,7 @@ build_packages = ["abuild", "build-base", "ccache"]
 
 # fnmatch for supported pkgnames, that can be directly compiled inside
 # the native chroot and a cross-compiler, without using distcc
-build_cross_native = ["linux-*", "arch-bin-masquerade", "chocolate-doom", "mesa", "libdrm"]
+build_cross_native = ["linux-*", "arch-bin-masquerade", "chocolate-doom", "mesa-grate", "libdrm-grate"]
 
 # Necessary kernel config options
 necessary_kconfig_options = {
