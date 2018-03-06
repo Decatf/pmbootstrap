@@ -1,0 +1,26 @@
+From a7d4851d41baf5fab1f4951af6205646bf92b84a Mon Sep 17 00:00:00 2001
+From: ryang <decatf@gmail.com>
+Date: Wed, 21 Feb 2018 12:00:09 -0500
+Subject: [PATCH 3/4] musl fix includes
+
+---
+ src/util/rand_xor.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/util/rand_xor.c b/src/util/rand_xor.c
+index de04bbc..ea49260 100644
+--- a/src/util/rand_xor.c
++++ b/src/util/rand_xor.c
+@@ -24,6 +24,9 @@
+ 
+ #if defined(__linux__)
+ #include <sys/file.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <fcntl.h>
+ #include <unistd.h>
+ #include <fcntl.h>
+ #else
+-- 
+2.7.4
+

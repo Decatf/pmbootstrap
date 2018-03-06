@@ -1,0 +1,39 @@
+From bb9f5c998902f1f60e3a6f3847c2fb7e1e8e2a17 Mon Sep 17 00:00:00 2001
+From: ryang <decatf@gmail.com>
+Date: Wed, 21 Feb 2018 12:01:00 -0500
+Subject: [PATCH 4/4] musl fixes
+
+---
+ src/gallium/winsys/svga/drm/vmw_screen.h | 2 +-
+ src/util/u_endian.h                      | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/gallium/winsys/svga/drm/vmw_screen.h b/src/gallium/winsys/svga/drm/vmw_screen.h
+index f21cabb..20d03f8 100644
+--- a/src/gallium/winsys/svga/drm/vmw_screen.h
++++ b/src/gallium/winsys/svga/drm/vmw_screen.h
+@@ -34,7 +34,7 @@
+ #ifndef VMW_SCREEN_H_
+ #define VMW_SCREEN_H_
+ 
+-
++#include <sys/stat.h>
+ #include "pipe/p_compiler.h"
+ #include "pipe/p_state.h"
+ 
+diff --git a/src/util/u_endian.h b/src/util/u_endian.h
+index 22d011e..1e16123 100644
+--- a/src/util/u_endian.h
++++ b/src/util/u_endian.h
+@@ -27,7 +27,7 @@
+ #ifndef U_ENDIAN_H
+ #define U_ENDIAN_H
+ 
+-#if defined(__GLIBC__) || defined(ANDROID) || defined(__CYGWIN__)
++#if defined(__linux__) || defined(ANDROID) || defined(__CYGWIN__)
+ #include <endian.h>
+ 
+ #if __BYTE_ORDER == __LITTLE_ENDIAN
+-- 
+2.7.4
+

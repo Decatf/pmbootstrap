@@ -1,15 +1,12 @@
-# Maintainer: Natanael Copa <ncopa@alpinelinux.org>
-pkgname=mesa
+_provides_pkgname=mesa
+pkgname=mesa-grate
 pkgver=17.2.4
-pkgrel=1
+pkgrel=10
 pkgdesc="Mesa DRI OpenGL library"
 url="http://www.mesa3d.org"
 arch="all"
 license="LGPL"
 subpackages="$pkgname-dev
-	$pkgname-dri-ati:_dri
-	$pkgname-dri-nouveau:_dri
-	$pkgname-dri-freedreno:_dri
 	$pkgname-dri-swrast:_dri
 	$pkgname-dri-virtio:_dri
 	$pkgname-glapi $pkgname-egl $pkgname-gl $pkgname-gles
@@ -17,27 +14,35 @@ subpackages="$pkgname-dev
 	$pkgname-libwayland-egl:_wayland
 	"
 _llvmver=5
-depends_dev="libdrm-dev dri2proto libxext-dev libxdamage-dev libxcb-dev glproto
+depends_dev="dri2proto libxext-dev libxdamage-dev libxcb-dev glproto
 	dri3proto presentproto libxshmfence-dev"
 makedepends="$depends_dev expat-dev xextproto python3 libxt-dev makedepend
 	talloc-dev py3-libxml2 flex bison llvm$_llvmver-dev eudev-dev libvdpau-dev
 	libxvmc-dev gettext zlib-dev wayland-dev libelf-dev py-mako
 	autoconf automake libtool libxxf86vm-dev libx11-dev libxfixes-dev
-	wayland-protocols"
-source="https://mesa.freedesktop.org/archive/mesa-$pkgver.tar.xz
-	glx_ro_text_segm.patch
-	musl-fixes.patch
-	musl-fix-includes.patch
-	drmdeps.patch
+	wayland-protocols
+	libdrm-grate-dev"
+
+branch=89c9c0fa0769ea9a8be4d1f01bd51832a2f1098c
+
+source="https://github.com/grate-driver/mesa/archive/$branch.tar.gz
+	0001-drmdeps.patch
+	0002-glx-ro-text-segm.patch
+	0003-musl-fix-includes.patch
+	0004-musl-fixes.patch
+	0001-PATCH-Simplify-wayland-scanner-lookup.patch
 	"
-replaces="mesa-dricore"
+replaces="mesa-dricore mesa mesa-dev mesa-doc mesa-xatracker mesa-osmesa"
+provides="$_provides_pkgname"
+
 
 _dri_driverdir=/usr/lib/xorg/modules/dri
-_dri_drivers="r200,radeon,nouveau,swrast"
-_gallium_drivers="r300,r600,radeonsi,nouveau,freedreno,swrast,virgl"
-_vulkan_drivers="radeon"
+_dri_drivers="swrast"
+_gallium_drivers="swrast,virgl"
+_vulkan_drivers=""
 
-builddir="$srcdir/mesa-$pkgver"
+# builddir="$srcdir/mesa-$pkgver"
+builddir="$srcdir/mesa-$branch"
 
 _arch_opts=
 
@@ -50,9 +55,11 @@ x86*)
 	_arch_opts="--enable-dri3"
 	;;
 arm*)
-	_gallium_drivers="${_gallium_drivers},vc4"
+	_gallium_drivers="${_gallium_drivers},tegra"
+	subpackages="$subpackages $pkgname-dri-tegra:_dri"
+	_arch_opts="--enable-dri3"
 	case "$CARCH" in
-	armhf) CFLAGS="$CFLAGS -mfpu=neon";;
+	armhf) CFLAGS="$CFLAGS -mfpu=vfpv3-d16";;
 	esac
 	;;
 esac
@@ -80,29 +87,33 @@ build() {
 		--prefix=/usr \
 		--sysconfdir=/etc \
 		--with-dri-driverdir=$_dri_driverdir \
-		--disable-asm \
-		--disable-xvmc \
-		--enable-glx-rts \
-		--with-gallium-drivers=${_gallium_drivers} \
-		--with-dri-drivers=${_dri_drivers} \
-		--with-vulcan-drivers=${_vulkan_drivers} \
-		--with-llvm-prefix=/usr/lib/llvm$_llvmver \
-		--enable-llvm \
-		--enable-llvm-shared-libs \
-		--with-platforms=x11,drm,wayland \
-		--enable-shared-glapi \
-		--enable-gbm \
-		--disable-glx-tls \
-		--disable-nine \
 		--enable-dri \
 		--enable-glx \
-		--enable-osmesa \
+		--enable-shared-glapi \
+		--enable-texture-float \
+		--disable-nine \
+		--enable-debug \
+		--enable-dri3 \
+		--enable-egl \
+		--enable-gbm \
 		--enable-gles1 \
 		--enable-gles2 \
-		--enable-egl \
-		--enable-texture-float \
+		--enable-glx-tls \
+		--enable-valgrind=auto \
+		--enable-llvm-shared-libs \
+		--with-dri-drivers=${_dri_drivers} \
+		--with-gallium-drivers=${_gallium_drivers} \
+		--with-vulkan-drivers= \
+		--with-platforms=x11,drm,wayland \
+		--disable-nine \
+		--disable-llvm \
+		--disable-omx-bellagio \
+		--disable-va \
+		--disable-vdpau \
 		--enable-xa \
-		--enable-vdpau \
+		--disable-xvmc \
+		--enable-osmesa \
+		--enable-debug \
 		$_arch_opts
 	make
 }
@@ -112,9 +123,24 @@ package() {
 	make -j1 DESTDIR="$pkgdir" install
 }
 
+override_package() {
+	provides="${subpkgname/${pkgname}/${_provides_pkgname}}"
+}
+
+dev() {
+	default_dev
+	override_package
+}
+
+doc() {
+	default_doc
+	override_package
+}
+
 egl() {
 	pkgdesc="Mesa libEGL runtime libraries"
-	replaces="mesa"
+	replaces="mesa mesa-dev mesa-doc"
+	override_package
 
 	install -d "$subpkgdir"/usr/lib
 	mv "$pkgdir"/usr/lib/libEGL.so* "$subpkgdir"/usr/lib/
@@ -122,7 +148,8 @@ egl() {
 
 gl() {
 	pkgdesc="Mesa libGL runtime libraries"
-	replaces="mesa"
+	replaces="mesa mesa-dev mesa-doc"
+	override_package
 
 	install -d "$subpkgdir"/usr/lib
 	mv "$pkgdir"/usr/lib/libGL.so* "$subpkgdir"/usr/lib/
@@ -131,6 +158,7 @@ gl() {
 glapi() {
 	pkgdesc="Mesa shared glapi"
 	replaces="$pkgname-gles"
+	override_package
 
 	install -d "$subpkgdir"/usr/lib
 	mv "$pkgdir"/usr/lib/libglapi.so.* "$subpkgdir"/usr/lib/
@@ -138,7 +166,8 @@ glapi() {
 
 gles() {
 	pkgdesc="Mesa libGLESv2 runtime libraries"
-	replaces="mesa"
+	replaces="mesa mesa-dev mesa-doc"
+	override_package
 
 	install -d "$subpkgdir"/usr/lib
 	mv "$pkgdir"/usr/lib/libGLES*.so* "$subpkgdir"/usr/lib/
@@ -146,6 +175,8 @@ gles() {
 
 xatracker() {
 	pkgdesc="Mesa XA state tracker for vmware"
+	replaces="mesa mesa-dev mesa-doc"
+	override_package
 
 	install -d "$subpkgdir"/usr/lib
 	mv "$pkgdir"/usr/lib/libxatracker*.so.* "$subpkgdir"/usr/lib/
@@ -153,6 +184,8 @@ xatracker() {
 
 osmesa() {
 	pkgdesc="Mesa offscreen rendering libraries"
+	replaces="mesa mesa-dev mesa-doc"
+	override_package
 
 	install -d "$subpkgdir"/usr/lib
 	mv "$pkgdir"/usr/lib/libOSMesa.so.* "$subpkgdir"/usr/lib/
@@ -160,7 +193,8 @@ osmesa() {
 
 gbm() {
 	pkgdesc="Mesa gbm library"
-	replaces="mesa"
+	replaces="mesa mesa-dev mesa-doc"
+	override_package
 
 	install -d "$subpkgdir"/usr/lib
 	mv "$pkgdir"/usr/lib/libgbm.so.* "$subpkgdir"/usr/lib/
@@ -200,6 +234,7 @@ _mv_gpipe() {
 _dri() {
 	local n=${subpkgname##*-dri-}
 	pkgdesc="Mesa DRI driver for $n"
+	override_package
 
 	case $n in
 	ati)
@@ -221,6 +256,9 @@ _dri() {
 	swrast)
 		_mv_dri swrast_dri kms_swrast_dri && _mv_gpipe swrast
 		;;
+	tegra)
+		_mv_dri tegra_dri
+		;;
 	vmwgfx)
 		_mv_dri vmwgfx_dri && _mv_gpipe vmwgfx
 		;;
@@ -232,13 +270,15 @@ _dri() {
 
 _wayland() {
 	pkgdesc="Mesa libwayland-egl library"
+	override_package
 
 	mkdir -p "$subpkgdir"/usr/lib
 	mv "$pkgdir"/usr/lib/libwayland-egl.so.* "$subpkgdir"/usr/lib/
 }
 
-sha512sums="665b63aab6af3f8f263f182d85d9ad71db7a23bcbaf67d62fe53c258cb0f600266ac82e72d681ec20cf7c66b47d4076aad5c3f553519f19110ee577da2707085  mesa-17.2.4.tar.xz
-c3d4804ebc24c7216e4c9d4995fb92e116be7f478024b44808ee134a4c93bb51d1f66fe5fb6eca254f124c4abf6f81272b027824b3e2650a9607818bf793035a  glx_ro_text_segm.patch
-163bb96773686a7446f40a8415acef762910afb2f4f2271d429d9cbd9e3048111c8c0023c1f072fa63f33b68b2aea9d066efd9083904265151eeccbe8ccb7227  musl-fixes.patch
-c7d91a660a033df91fac9c557039efc8669f0c26b2d35997d50753938b70d1af0bd110dcab3f8236eafab7d4be5dd7cd128a3e057e67e7e6a38a73fd6a7ef62e  musl-fix-includes.patch
-1771179e603d1b32a2619eb9b6c166eb7ce82cbc774b3c47d2351bbf69c8e3c0bd26f1c4d3d4fa95d05ea886e2cc74f4fae1210d6d5790de146f9fb9e42bdb30  drmdeps.patch"
+sha512sums="388abdcadf1a613ae2b4fffa5a5bd22be7a9b34eaa4c3406dbb52e0c80294dbe33ab6cffc6114d84bf4786aca9dc86cd683c7d4e77a14ad4b48e2a99114a4bb1  89c9c0fa0769ea9a8be4d1f01bd51832a2f1098c.tar.gz
+8f6bb8610b754ed233bfd5443541c31562d4b5460d77b6a2c017f6139b1723d44ffca80df1be559e1de7b326591d231be9ef7a66436a9885cc966be49ff90a49  0001-drmdeps.patch
+bd8eb6868dd3d74bb6f0caa9cff938749e008950717f7f011fc1e4cf7e15b020d9bc79e0f5dea17c2d6631f5ec1aa00260a016a32a56697cc816952f9e622d19  0002-glx-ro-text-segm.patch
+4b0ef61994cba254a4d6d02b486f744b4555043ddf453e387d256c6a6201a236029e9790096bc02cc11924fa76cfe5c82663ad96ef7992d9aeeb427af541348e  0003-musl-fix-includes.patch
+ebf94b59ed2909a23c87bb7b7ff4d3e0d921420f3cf64c39f7b8e180ebf878f7a74bf5d1281de5bfe94773bf3b47f99ab72edf74802a7e82d6b3346bb40f699b  0004-musl-fixes.patch
+cdb9dadaa60e636fa72bb3c045b860084043c91ea9cfcac1a2ee19b481c690a56af837f3b1aae5f4e60be5bf750160749ecf3b4d08adadb5d3e64172d915046d  0001-PATCH-Simplify-wayland-scanner-lookup.patch"
