@@ -10,7 +10,7 @@ options="!check"
 depends="postmarketos-base linux-samsung-p4wifi mkbootimg mesa-dri-swrast"
 makedepends="devicepkg-dev"
 subpackages="$pkgname-nonfree-firmware:nonfree_firmware"
-source="deviceinfo"
+source="deviceinfo modules-load.conf modprobe.conf"
 
 build() {
 	devicepkg_build $startdir $pkgname
@@ -18,6 +18,11 @@ build() {
 
 package() {
 	devicepkg_package $startdir $pkgname
+
+	install -D -m644 "$srcdir"/modules-load.conf \
+		"$pkgdir"/etc/modules-load.d/00-${pkgname}.conf
+	install -D -m644 "$srcdir"/modprobe.conf \
+		"$pkgdir"/etc/modprobe.d/00-${pkgname}.conf
 }
 
 nonfree_firmware() {
@@ -26,4 +31,6 @@ nonfree_firmware() {
 	mkdir "$subpkgdir"
 }
 
-sha512sums="51025b6d7c6fa5b088296c875cfb7342889a78ad73b163db9b0ec88ac919a788ef6eb150c5e46d7a7c2c461e9117fb07b4999e69d948ca0a782a2027dabedec7  deviceinfo"
+sha512sums="51025b6d7c6fa5b088296c875cfb7342889a78ad73b163db9b0ec88ac919a788ef6eb150c5e46d7a7c2c461e9117fb07b4999e69d948ca0a782a2027dabedec7  deviceinfo
+d8ce60ea7acaabf627ddca2f0887a4cda46f313b7aaf7934bef2fef8a6e0798ccefab849e4571e4e3fcd06ae34c1a6efe3b58b401e2e443416f6200e6d4ea769  modules-load.conf
+56b865bab0714aed53bd6535ebefd2f3629ec78786e8f87dcae4637cfacb5912d28dc39d1fe0287d34bb36b4a8371481f54647e1b25190afbcd23ed30fe7edac  modprobe.conf"
