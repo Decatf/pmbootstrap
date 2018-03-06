@@ -1,13 +1,14 @@
 pkgname=xf86-video-opentegra
 pkgver=0.0.1
-pkgrel=0
+pkgrel=1
 pkgdesc="X.Org driver for NVIDIA tegra"
 url="https://github.com/grate-driver/"
 arch="armhf"
 license="MIT"
 subpackages="$pkgname-doc"
 depends=
-makedepends="xorg-server-dev xproto fontsproto libdrm-dev util-macros"
+makedepends="libdrm-grate-dev xorg-server-dev xproto fontsproto libdrm-dev util-macros
+	libtool m4 automake autoconf"
 branch=96acfc480669adc9cf9092003b01e909c3a14513
 source="https://github.com/grate-driver/xf86-video-opentegra/archive/$branch.tar.gz
 	"
@@ -18,8 +19,7 @@ builddir="$srcdir"/$pkgname-$branch
 build() {
 	cd "$builddir"
 	export LDFLAGS="$LDFLAGS -Wl,-z,lazy"
-	./autogen.sh
-	./configure \
+	./autogen.sh \
 		--build=$CBUILD \
 		--host=$CHOST \
 		--prefix=/usr
