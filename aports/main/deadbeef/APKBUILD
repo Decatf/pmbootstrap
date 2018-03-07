@@ -41,11 +41,13 @@ prepare() {
 }
 
 build(){
-	export CFLAGS="-Wno-narrowing"
-	export CXXFLAGS="-Wno-narrowing"
+	export CFLAGS="$CFLAGS -Wno-narrowing"
+	export CXXFLAGS="$CXXFLAGS -Wno-narrowing"
 	cd "$builddir"
 	./autogen.sh
 	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
 		--prefix=/usr \
 		--enable-gtk2
 	make
