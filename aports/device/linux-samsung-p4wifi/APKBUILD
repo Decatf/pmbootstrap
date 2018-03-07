@@ -1,8 +1,8 @@
 # Kernel config based on: arch/arm/configs/tegra_android_defconfig
 
 pkgname="linux-samsung-p4wifi"
-pkgver=4.14.0
-pkgrel=1
+pkgver=4.14.18
+pkgrel=2
 pkgdesc="Galaxy Tab 10.1 kernel"
 arch="armhf"
 _carch="arm"
@@ -22,6 +22,8 @@ source="
 	$_config
 	zImage-dtb
 	kernel.release
+	brcmutil.ko
+	brcmfmac.ko
 "
 builddir="$srcdir/${_repository}-${_rev}"
 
@@ -39,8 +41,15 @@ package() {
 		"$pkgdir/boot/vmlinuz-$_flavor"
 	install -D "$srcdir/kernel.release" \
 		"$pkgdir/usr/share/kernel/$_flavor/kernel.release"
+
+	install -D "$srcdir/brcmutil.ko" \
+		"$pkgdir/lib/modules/brcmutil.ko"
+	install -D "$srcdir/brcmfmac.ko" \
+		"$pkgdir/lib/modules/brcmfmac.ko"
 }
 
 sha512sums="03a61b17390f2d7a7a5408e970ef59290cb44aedc5224225a363fc2a3869f0e8720e44e38743342bc339adb7dd08804705a463779da76a710bea5e69b246f47e  config-samsung-p4wifi.armhf
-28d799af20e6449790a897b6a8bf4acc0f42c96fd11f0abbbe5b3b3862432a02160081ebf9e4f9cf43b207d7a772a78a0c204498da08e0e8b51c11004ca5299e  zImage-dtb
-5222448ff707d1d19e52a745bfaaa7ef9e5fe65d5d17df9bcd4a8f8b31e80501fe271a02ffad5148235f903506e70bb80920f8d25ac82a7c28f77a631d9fb6ac  kernel.release"
+e5d15c634e43afe2f407c28b6797216c6cdbdff835d30425e4e4e69fa7a4b3ed49f9c12fc611634450b5509b2274488e00a5ec154b8df6725f72f11e96d2cecc  zImage-dtb
+107cc907a60e769fe7171560319c04fa5d58f9f7e9976adb36909c70f3aa3a844509dce187c6c9972112f302cb8a70aaf28232aede9978ac4b1b3159a403b002  kernel.release
+ae15325be8b765bba1826c0ac803d9cb9608fd13d6cd500ffd264364bf63e32c04bf2d5263d983cf2fb89a1f1b304cc482f13034c357c1c51e974eef32c1b6c2  brcmutil.ko
+4784c421c3bae5f82f3e613cdfe94b2b9a869e285015963f137a3c4448fa0d7272f289edaa2a253d2aa002399490d8fce7dde5e367d18d43f8fa19ade8832263  brcmfmac.ko"
