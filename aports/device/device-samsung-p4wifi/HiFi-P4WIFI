@@ -1,0 +1,70 @@
+SectionVerb {
+        EnableSequence [
+                cdev "hw:P4WIFI"
+
+        ]
+
+        DisableSequence [
+                cdev "hw:P4WIFI"
+
+        ]
+
+        Value {
+                PlaybackPCM "hw:P4WIFI,0"
+                CapturePCM "hw:P4WIFI,0"
+        }
+
+}
+
+SectionDevice."Speaker" {
+        Comment "Speaker Rx device"
+
+        ConflictingDevice [
+                "Headphones"
+        ]
+
+        EnableSequence [
+                cdev "hw:P4WIFI"
+
+                cset "name='Playback Path' SPK"
+                cset "name='Playback Spkr Volume' 38"
+        ]
+
+        DisableSequence [
+                cdev "hw:P4WIFI"
+
+                cset "name='Playback Path' OFF"
+        ]
+
+        Value {
+                PlaybackChannels "2"
+        }
+
+}
+
+SectionDevice."Headphones" {
+        Comment "Headset Rx device"
+
+        ConflictingDevice [
+                "Speaker"
+        ]
+
+        EnableSequence [
+                cdev "hw:P4WIFI"
+
+                cset "name='Playback Path' HP"
+                cset "name='Playback Headset Volume' 38"
+        ]
+
+        DisableSequence [
+                cdev "hw:P4WIFI"
+
+                cset "name='Playback Path' OFF"
+        ]
+
+        Value {
+                PlaybackChannels "2"
+        }
+
+}
+
