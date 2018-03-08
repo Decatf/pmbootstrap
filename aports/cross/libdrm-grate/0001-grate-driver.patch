@@ -1,20 +1,20 @@
-From 3531ed5b81f3b91dece16d07fd0e01b1f4f51f64 Mon Sep 17 00:00:00 2001
+From aec20a22e2c2fa8e6414222e1f80a262eaeaf89a Mon Sep 17 00:00:00 2001
 From: ryang <decatf@gmail.com>
-Date: Tue, 20 Feb 2018 20:07:23 -0500
+Date: Thu, 8 Mar 2018 14:55:03 -0500
 Subject: [PATCH] grate-driver
 
 ---
  tegra/Makefile.am        |  10 +-
- tegra/channel.c          | 133 +++++++++++++++
- tegra/fence.c            |  56 ++++++
- tegra/job.c              | 185 ++++++++++++++++++++
- tegra/private.h          | 223 +++++++++++++++++++++++-
- tegra/pushbuf.c          | 231 +++++++++++++++++++++++++
+ tegra/channel.c          | 133 +++++++++
+ tegra/fence.c            |  56 ++++
+ tegra/job.c              | 185 ++++++++++++
+ tegra/private.h          | 291 ++++++++++++++++++-
+ tegra/pushbuf.c          | 231 +++++++++++++++
  tegra/tegra-symbol-check |  18 ++
- tegra/tegra.c            | 432 +++++++++++++++++++++++++++++++++++++++++------
- tegra/tegra.h            |  69 +++++++-
- tegra/tegra_bo_cache.c   | 296 ++++++++++++++++++++++++++++++++
- 10 files changed, 1597 insertions(+), 56 deletions(-)
+ tegra/tegra.c            | 719 +++++++++++++++++++++++++++++++++++++++++++----
+ tegra/tegra.h            |  69 ++++-
+ tegra/tegra_bo_cache.c   | 348 +++++++++++++++++++++++
+ 10 files changed, 2002 insertions(+), 58 deletions(-)
  create mode 100644 tegra/channel.c
  create mode 100644 tegra/fence.c
  create mode 100644 tegra/job.c
@@ -443,15 +443,16 @@ index 0000000..55ef528
 +	return 0;
 +}
 diff --git a/tegra/private.h b/tegra/private.h
-index bb6c1a5..18c93f9 100644
+index bb6c1a5..32ca191 100644
 --- a/tegra/private.h
 +++ b/tegra/private.h
-@@ -26,26 +26,247 @@
+@@ -26,26 +26,315 @@
  #define __DRM_TEGRA_PRIVATE_H__ 1
  
  #include <stdbool.h>
 +#include <stddef.h>
  #include <stdint.h>
++#include <stdio.h>
 +#include <time.h>
  
 +#include <libdrm_lists.h>
@@ -469,6 +470,52 @@ index bb6c1a5..18c93f9 100644
 +	(((offset) + (align) - 1) & ~((align) - 1))
 +
 +#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
++
++#ifndef NDEBUG
++#define VDBG_DRM(DRM, FMT, ...) do {					\
++	if (DRM->debug_bo)						\
++		fprintf(stderr, "%s: %d: " FMT,				\
++		__func__, __LINE__, __VA_ARGS__);			\
++} while (0)
++
++#define DBG_BO_STATS(DRM) do {						\
++	if (DRM->debug_bo)						\
++		fprintf(stderr,						\
++			"%s: %d:\tstats: "				\
++			"total BO's allocated %d (%d bytes, "		\
++						 "%d BO's cached) "	\
++			"total BO's mapped %d (%d pages, "		\
++					      "%d pages cached of %d BO's)\n", \
++			__func__, __LINE__,				\
++			 drm->debug_bos_allocated,			\
++			 drm->debug_bos_total_size,			\
++			 drm->debug_bos_cached,				\
++			 drm->debug_bos_mapped,				\
++			 drm->debug_bos_total_pages,			\
++			 drm->debug_bos_cached_pages,			\
++			 drm->debug_bos_mappings_cached);		\
++} while (0)
++
++#define VDBG_BO(BO, FMT, ...) do {					\
++	if (BO->drm->debug_bo)						\
++		fprintf(stderr,						\
++			"%s: %d:\tBO %p size %u handle %u name %u "	\
++			"flags 0x%08X refcnt %d map %p mmap_ref %u "	\
++			"map_cached %p: "				\
++			FMT,						\
++			__func__, __LINE__, BO, BO->size, BO->handle,	\
++			BO->name, BO->flags, atomic_read(&BO->ref),	\
++			BO->map, BO->mmap_ref, BO->map_cached,		\
++			__VA_ARGS__);					\
++} while (0)
++
++#define DBG_BO(BO, FMT) VDBG_BO(BO, FMT "%s", "")
++#else
++#define VDBG_DRM(DRM, FMT, ...)	do {} while (0)
++#define DBG_BO_STATS(DRM)	do {} while (0)
++#define VDBG_BO(BO, FMT, ...)	do {} while (0)
++#define DBG_BO(BO, FMT)		do {} while (0)
++#endif
 +
 +enum host1x_class {
 +	HOST1X_CLASS_HOST1X = 0x01,
@@ -509,13 +556,27 @@ index bb6c1a5..18c93f9 100644
 +	struct drm_tegra_bo_mmap_cache mmap_cache;
  	bool close;
  	int fd;
++
++#ifndef NDEBUG
++	bool debug_bo;
++	bool debug_bo_back_guard;
++	bool debug_bo_front_guard;
++	int32_t debug_bos_allocated;
++	int32_t debug_bos_total_size;
++	int32_t debug_bos_cached;
++	int32_t debug_bos_mapped;
++	int32_t debug_bos_total_pages;
++	int32_t debug_bos_cached_pages;
++	int32_t debug_bos_mappings_cached;
++#endif
  };
  
  struct drm_tegra_bo {
  	struct drm_tegra *drm;
+-	uint32_t handle;
 +	drmMMListHead push_list;
- 	uint32_t handle;
--	uint32_t offset;
+ 	uint32_t offset;
++	uint32_t handle;
  	uint32_t flags;
  	uint32_t size;
 +	uint32_t name;
@@ -539,6 +600,15 @@ index bb6c1a5..18c93f9 100644
 +	time_t unmap_time;		/* time when added to cache-list */
 +	void *map_cached;		/* holds cached mmap pointer */
 +
++	bool custom_tiling;
++	bool custom_flags;
++
++#ifndef NDEBUG
++	uint32_t debug_size;
++
++	uint64_t *guard_front;
++	uint64_t *guard_back;
++#endif
 +};
 +
 +struct drm_tegra_channel {
@@ -598,12 +668,10 @@ index bb6c1a5..18c93f9 100644
 +int __drm_tegra_bo_map(struct drm_tegra_bo *bo, void **ptr);
 +
 +void drm_tegra_bo_cache_init(struct drm_tegra_bo_cache *cache, bool coarse);
-+void drm_tegra_bo_cache_cleanup(struct drm_tegra_bo_cache *cache, time_t time);
-+struct drm_tegra_bo * drm_tegra_bo_cache_alloc(
-+		struct drm_tegra_bo_cache *cache,
-+		uint32_t *size, uint32_t flags);
-+int drm_tegra_bo_cache_free(struct drm_tegra_bo_cache *cache,
-+			    struct drm_tegra_bo *bo);
++void drm_tegra_bo_cache_cleanup(struct drm_tegra *drm, time_t time);
++struct drm_tegra_bo * drm_tegra_bo_cache_alloc(struct drm_tegra *drm,
++					       uint32_t *size, uint32_t flags);
++int drm_tegra_bo_cache_free(struct drm_tegra_bo *bo);
 +void drm_tegra_bo_cache_unmap(struct drm_tegra_bo *bo);
 +void *drm_tegra_bo_cache_map(struct drm_tegra_bo *bo);
 +
@@ -962,7 +1030,7 @@ index 420469f..a72ee74 100755
  done)
  
 diff --git a/tegra/tegra.c b/tegra/tegra.c
-index f7dc89a..a0c8b32 100644
+index f7dc89a..1b539ce 100644
 --- a/tegra/tegra.c
 +++ b/tegra/tegra.c
 @@ -28,6 +28,7 @@
@@ -973,7 +1041,7 @@ index f7dc89a..a0c8b32 100644
  #include <string.h>
  #include <unistd.h>
  
-@@ -35,24 +36,63 @@
+@@ -35,24 +36,240 @@
  
  #include <xf86drm.h>
  
@@ -1001,32 +1069,191 @@ index f7dc89a..a0c8b32 100644
 +	return bo;
 +}
 +
++static void drm_tegra_bo_setup_guards(struct drm_tegra_bo *bo)
++{
++#ifndef NDEBUG
++	struct drm_tegra *drm = bo->drm;
++	struct drm_tegra_gem_mmap args;
++	uint64_t guard = 0x5351317315731757;
++	uint8_t *map;
++	size_t size;
++	unsigned i;
++	int err;
++
++	if (!drm->debug_bo_front_guard && !drm->debug_bo_back_guard)
++		return;
++
++	size = bo->size;
++
++	if (drm->debug_bo_back_guard)
++		size += 4096;
++
++	memset(&args, 0, sizeof(args));
++	args.handle = bo->handle;
++
++	err = drmCommandWriteRead(drm->fd, DRM_TEGRA_GEM_MMAP,
++				  &args, sizeof(args));
++	if (err < 0) {
++		VDBG_BO(bo, "failed get mapping offset err %d (%s)\n",
++			err, strerror(-err));
++		abort();
++	}
++
++	map = mmap(0, bo->offset + size, PROT_READ | PROT_WRITE, MAP_SHARED,
++		   drm->fd, args.offset);
++	if (map == MAP_FAILED) {
++		VDBG_BO(bo, "failed to map guard 0x%llX err %d (%s)\n",
++			args.offset, -errno, strerror(errno));
++		abort();
++	}
++
++	if (drm->debug_bo_front_guard)
++		bo->guard_front = (uint64_t *)map;
++
++	if (drm->debug_bo_back_guard)
++		bo->guard_back = (uint64_t *)(map + bo->offset + bo->size);
++
++	VDBG_BO(bo, "front %p back %p\n", bo->guard_front, bo->guard_back);
++
++	/* we only interested in guards mapping, hence unmap the actual BO */
++	if (bo->size >= 4096)
++		munmap(map + bo->offset, align(bo->size - 4095, 4096));
++
++	if (bo->handle & 1)
++		guard = ~guard;
++
++	if (drm->debug_bo_front_guard)
++		for (i = 0; i < 512; i++)
++			bo->guard_front[i] = guard;
++
++	if (drm->debug_bo_back_guard)
++		for (i = 0; i < 512; i++)
++			bo->guard_back[i] = guard;
++#endif
++}
++
++static void drm_tegra_bo_check_guards(struct drm_tegra_bo *bo)
++{
++#ifndef NDEBUG
++	struct drm_tegra *drm = bo->drm;
++	uint64_t guard_check = 0x5351317315731757;
++	uint64_t guard;
++	unsigned i;
++
++	if (!drm->debug_bo_front_guard && !drm->debug_bo_back_guard)
++		return;
++
++	VDBG_BO(bo, "front %p back %p\n", bo->guard_front, bo->guard_back);
++
++	if (bo->handle & 1)
++		guard_check = ~guard_check;
++
++	if (drm->debug_bo_front_guard) {
++		for (i = 0; i < 512; i++) {
++			guard = bo->guard_front[i];
++
++			if (guard != guard_check) {
++				VDBG_BO(bo, "front guard is corrupted: entry %u is 0x%16llX, should be 0x%16llX\n",
++					i, guard, guard_check);
++				abort();
++			}
++		}
++	}
++
++	if (drm->debug_bo_back_guard) {
++		for (i = 0; i < 512; i++) {
++			guard = bo->guard_back[i];
++
++			if (guard != guard_check) {
++				VDBG_BO(bo, "back guard is corrupted: entry %u is 0x%16llX, should be 0x%16llX\n",
++					i, guard, guard_check);
++				abort();
++			}
++		}
++	}
++#endif
++}
++
++static void drm_tegra_bo_unmap_guards(struct drm_tegra_bo *bo)
++{
++#ifndef NDEBUG
++	unsigned long unaligned = (unsigned long)bo->guard_back;
++	unsigned long aligned = align(unaligned - 4095, 4096);
++	void *guard_back = (void *)aligned;
++	unsigned guard_back_size = 4096;
++	struct drm_tegra *drm = bo->drm;
++
++	if (!drm->debug_bo_front_guard && !drm->debug_bo_back_guard)
++		return;
++
++	VDBG_BO(bo, "front %p back %p (%u)\n",
++		bo->guard_front, guard_back, guard_back_size);
++
++	if (bo->size & 4095)
++		guard_back_size *= 2;
++
++	if (drm->debug_bo_front_guard)
++		munmap(bo->guard_front, 4096);
++
++	if (drm->debug_bo_back_guard)
++		munmap(guard_back, guard_back_size);
++
++	bo->guard_front = NULL;
++	bo->guard_back = NULL;
++#endif
++}
++
 +drm_private int drm_tegra_bo_free(struct drm_tegra_bo *bo)
  {
  	struct drm_tegra *drm = bo->drm;
  	struct drm_gem_close args;
 +	int err;
 +
++	DBG_BO(bo, "\n");
++
++#ifndef NDEBUG
++	if (drm->debug_bo) {
++		drm->debug_bos_allocated--;
++		drm->debug_bos_total_size -= bo->debug_size;
++	}
++#endif
++	drm_tegra_bo_unmap_guards(bo);
++
 +	if (bo->map) {
 +		if (RUNNING_ON_VALGRIND)
 +			VG_BO_UNMMAP(bo);
 +		else
-+			munmap(bo->map, bo->size);
- 
--	if (bo->map)
--		munmap(bo->map, bo->size);
++			munmap(bo->map, bo->offset + bo->size);
++
 +	} else if (bo->map_cached) {
 +		if (!RUNNING_ON_VALGRIND)
-+			munmap(bo->map_cached, bo->size);
++			munmap(bo->map_cached, bo->offset + bo->size);
 +
 +		DRMLISTDEL(&bo->mmap_list);
++#ifndef NDEBUG
++		if (drm->debug_bo) {
++			drm->debug_bos_mappings_cached--;
++			drm->debug_bos_cached_pages -= bo->debug_size / 4096;
++		}
++#endif
++	} else {
++		goto vg_free;
 +	}
 +
++#ifndef NDEBUG
++	if (drm->debug_bo) {
++		drm->debug_bos_mapped--;
++		drm->debug_bos_total_pages -= bo->debug_size / 4096;
++	}
++#endif
++vg_free:
 +	VG_BO_FREE(bo);
 +
 +	if (bo->name)
 +		drmHashDelete(drm->name_table, bo->name);
-+
+ 
+-	if (bo->map)
+-		munmap(bo->map, bo->size);
 +	drmHashDelete(drm->handle_table, bo->handle);
  
  	memset(&args, 0, sizeof(args));
@@ -1039,11 +1266,29 @@ index f7dc89a..a0c8b32 100644
  
  	free(bo);
 +
++	DBG_BO_STATS(drm);
++
 +	return err;
++}
++
++static void drm_tegra_setup_debug(struct drm_tegra *drm)
++{
++#ifndef NDEBUG
++	char *str;
++
++	str = getenv("LIBDRM_TEGRA_DEBUG_BO");
++	drm->debug_bo = (str && strcmp(str, "1") == 0);
++
++	str = getenv("LIBDRM_TEGRA_DEBUG_BO_BACK_GUARD");
++	drm->debug_bo_back_guard = (str && strcmp(str, "1") == 0);
++
++	str = getenv("LIBDRM_TEGRA_DEBUG_BO_FRONT_GUARD");
++	drm->debug_bo_front_guard = (str && strcmp(str, "1") == 0);
++#endif
  }
  
  static int drm_tegra_wrap(struct drm_tegra **drmp, int fd, bool close)
-@@ -69,6 +109,14 @@ static int drm_tegra_wrap(struct drm_tegra **drmp, int fd, bool close)
+@@ -69,6 +286,16 @@ static int drm_tegra_wrap(struct drm_tegra **drmp, int fd, bool close)
  	drm->close = close;
  	drm->fd = fd;
  
@@ -1055,27 +1300,31 @@ index f7dc89a..a0c8b32 100644
 +	if (!drm->handle_table || !drm->name_table)
 +		return -ENOMEM;
 +
++	drm_tegra_setup_debug(drm);
++
  	*drmp = drm;
  
  	return 0;
-@@ -99,6 +147,10 @@ void drm_tegra_close(struct drm_tegra *drm)
+@@ -99,6 +326,10 @@ void drm_tegra_close(struct drm_tegra *drm)
  	if (!drm)
  		return;
  
-+	drm_tegra_bo_cache_cleanup(&drm->bo_cache, 0);
++	drm_tegra_bo_cache_cleanup(drm, 0);
 +	drmHashDestroy(drm->handle_table);
 +	drmHashDestroy(drm->name_table);
 +
  	if (drm->close)
  		close(drm->fd);
  
-@@ -115,11 +167,18 @@ int drm_tegra_bo_new(struct drm_tegra_bo **bop, struct drm_tegra *drm,
+@@ -115,11 +346,20 @@ int drm_tegra_bo_new(struct drm_tegra_bo **bop, struct drm_tegra *drm,
  	if (!drm || size == 0 || !bop)
  		return -EINVAL;
  
-+	bo = drm_tegra_bo_cache_alloc(&drm->bo_cache, &size, flags);
-+	if (bo)
++	bo = drm_tegra_bo_cache_alloc(drm, &size, flags);
++	if (bo) {
++		DBG_BO(bo, "success from cache\n");
 +		goto out;
++	}
 +
  	bo = calloc(1, sizeof(*bo));
  	if (!bo)
@@ -1088,30 +1337,53 @@ index f7dc89a..a0c8b32 100644
  	bo->flags = flags;
  	bo->size = size;
  	bo->drm = drm;
-@@ -131,13 +190,21 @@ int drm_tegra_bo_new(struct drm_tegra_bo **bop, struct drm_tegra *drm,
+@@ -128,16 +368,44 @@ int drm_tegra_bo_new(struct drm_tegra_bo **bop, struct drm_tegra *drm,
+ 	args.flags = flags;
+ 	args.size = size;
+ 
++#ifndef NDEBUG
++	if (drm->debug_bo_front_guard) {
++		bo->offset += 4096;
++		args.size += 4096;
++	}
++
++	if (drm->debug_bo_back_guard)
++		args.size += 4096;
++#endif
  	err = drmCommandWriteRead(drm->fd, DRM_TEGRA_GEM_CREATE, &args,
  				  sizeof(args));
  	if (err < 0) {
 -		err = -errno;
++		VDBG_DRM(drm, "failed size %u bytes flags 0x%08X err %d (%s)\n",
++			 size, flags, err, strerror(-err));
  		free(bo);
  		return err;
  	}
  
  	bo->handle = args.handle;
  
++	DBG_BO(bo, "success new\n");
 +	VG_BO_ALLOC(bo);
 +
-+	pthread_mutex_lock(&table_lock);
++#ifndef NDEBUG
++	if (drm->debug_bo) {
++		bo->debug_size = align(bo->size, 4096);
++		drm->debug_bos_total_size += bo->debug_size;
++		drm->debug_bos_allocated++;
++	}
++#endif
++	drm_tegra_bo_setup_guards(bo);
++	DBG_BO_STATS(drm);
 +
++	pthread_mutex_lock(&table_lock);
 +	/* add ourselves into the handle table */
 +	drmHashInsert(drm->handle_table, args.handle, bo);
-+
 +	pthread_mutex_unlock(&table_lock);
 +out:
  	*bop = bo;
  
  	return 0;
-@@ -147,23 +214,43 @@ int drm_tegra_bo_wrap(struct drm_tegra_bo **bop, struct drm_tegra *drm,
+@@ -147,37 +415,79 @@ int drm_tegra_bo_wrap(struct drm_tegra_bo **bop, struct drm_tegra *drm,
  		      uint32_t handle, uint32_t flags, uint32_t size)
  {
  	struct drm_tegra_bo *bo;
@@ -1148,6 +1420,7 @@ index f7dc89a..a0c8b32 100644
 +	/* add ourselves into the handle table */
 +	drmHashInsert(drm->handle_table, handle, bo);
 +
++	DBG_BO(bo, "success\n");
 +unlock:
 +	pthread_mutex_unlock(&table_lock);
 +
@@ -1158,7 +1431,14 @@ index f7dc89a..a0c8b32 100644
  }
  
  struct drm_tegra_bo *drm_tegra_bo_ref(struct drm_tegra_bo *bo)
-@@ -174,10 +261,24 @@ struct drm_tegra_bo *drm_tegra_bo_ref(struct drm_tegra_bo *bo)
+ {
+-	if (bo)
++	if (bo) {
++		DBG_BO(bo, "\n");
++
+ 		atomic_inc(&bo->ref);
++	}
+ 
  	return bo;
  }
  
@@ -1172,12 +1452,16 @@ index f7dc89a..a0c8b32 100644
 +	if (!bo)
 +		return -EINVAL;
 +
++	DBG_BO(bo, "\n");
++
 +	if (!atomic_dec_and_test(&bo->ref))
 +		return 0;
 +
++	drm_tegra_bo_check_guards(bo);
++
 +	pthread_mutex_lock(&table_lock);
 +
-+	if (!bo->reuse || drm_tegra_bo_cache_free(&bo->drm->bo_cache, bo))
++	if (!bo->reuse || drm_tegra_bo_cache_free(bo))
 +		err = drm_tegra_bo_free(bo);
 +
 +	pthread_mutex_unlock(&table_lock);
@@ -1186,31 +1470,33 @@ index f7dc89a..a0c8b32 100644
  }
  
  int drm_tegra_bo_get_handle(struct drm_tegra_bo *bo, uint32_t *handle)
-@@ -190,36 +291,70 @@ int drm_tegra_bo_get_handle(struct drm_tegra_bo *bo, uint32_t *handle)
+@@ -190,36 +500,94 @@ int drm_tegra_bo_get_handle(struct drm_tegra_bo *bo, uint32_t *handle)
  	return 0;
  }
  
 -int drm_tegra_bo_map(struct drm_tegra_bo *bo, void **ptr)
 +drm_private int __drm_tegra_bo_map(struct drm_tegra_bo *bo, void **ptr)
  {
--	struct drm_tegra *drm = bo->drm;
+ 	struct drm_tegra *drm = bo->drm;
 +	struct drm_tegra_gem_mmap args;
-+	void *map;
++	uint8_t *map;
 +	int err;
  
 -	if (!bo->map) {
 -		struct drm_tegra_gem_mmap args;
 -		int err;
 +	map = drm_tegra_bo_cache_map(bo);
-+	if (map)
++	if (map) {
++		DBG_BO(bo, "success from cache\n");
 +		goto out;
++	}
  
 -		memset(&args, 0, sizeof(args));
 -		args.handle = bo->handle;
 +#ifdef HAVE_VALGRIND
 +	if (RUNNING_ON_VALGRIND && bo->map_vg) {
 +		map = bo->map_vg;
-+		goto out;
++		goto map_cnt;
 +	}
 +#endif
  
@@ -1220,12 +1506,24 @@ index f7dc89a..a0c8b32 100644
 -			return -errno;
 +	memset(&args, 0, sizeof(args));
 +	args.handle = bo->handle;
++
++	err = drmCommandWriteRead(drm->fd, DRM_TEGRA_GEM_MMAP,
++				  &args, sizeof(args));
++	if (err < 0) {
++		VDBG_BO(bo, "failed get mapping offset err %d (%s)\n",
++			err, strerror(-err));
++		return err;
++	}
  
 -		bo->offset = args.offset;
-+	err = drmCommandWriteRead(bo->drm->fd, DRM_TEGRA_GEM_MMAP,
-+					&args, sizeof(args));
-+	if (err < 0)
-+		return err;
++	map = mmap(0, bo->offset + bo->size, PROT_READ | PROT_WRITE, MAP_SHARED,
++		   drm->fd, args.offset);
++	if (map == MAP_FAILED) {
++		VDBG_BO(bo, "failed to map offset 0x%llX err %d (%s)\n",
++			args.offset, -errno, strerror(errno));
++		*ptr = NULL;
++		return -errno;
++	}
  
 -		bo->map = mmap(0, bo->size, PROT_READ | PROT_WRITE, MAP_SHARED,
 -			       drm->fd, bo->offset);
@@ -1233,13 +1531,21 @@ index f7dc89a..a0c8b32 100644
 -			bo->map = NULL;
 -			return -errno;
 -		}
-+	map = mmap(0, bo->size, PROT_READ | PROT_WRITE, MAP_SHARED,
-+			bo->drm->fd, args.offset);
-+	if (map == MAP_FAILED) {
-+		*ptr = NULL;
-+		return -errno;
++	map += bo->offset;
++#ifdef HAVE_VALGRIND
++map_cnt:
++#endif
++#ifndef NDEBUG
++	if (drm->debug_bo && ptr == &bo->map) {
++		drm->debug_bos_mapped++;
++		drm->debug_bos_total_pages += bo->debug_size / 4096;
  	}
++#endif
++	DBG_BO(bo, "success\n");
 +out:
++	if (ptr == &bo->map)
++		DBG_BO_STATS(drm);
++
 +	*ptr = map;
 +
 +	return 0;
@@ -1253,16 +1559,17 @@ index f7dc89a..a0c8b32 100644
 +		return -EINVAL;
 +
 +	pthread_mutex_lock(&table_lock);
-+
+ 
 +	if (!bo->map) {
 +		err = __drm_tegra_bo_map(bo, &bo->map);
 +		if (err)
 +			goto out;
 +
 +		VG_BO_MMAP(bo);
- 
++
 +		bo->mmap_ref = 1;
 +	} else {
++		DBG_BO(bo, "\n");
 +		bo->mmap_ref++;
 +	}
 +out:
@@ -1276,24 +1583,26 @@ index f7dc89a..a0c8b32 100644
  }
  
  int drm_tegra_bo_unmap(struct drm_tegra_bo *bo)
-@@ -227,13 +362,20 @@ int drm_tegra_bo_unmap(struct drm_tegra_bo *bo)
+@@ -227,13 +595,22 @@ int drm_tegra_bo_unmap(struct drm_tegra_bo *bo)
  	if (!bo)
  		return -EINVAL;
  
 -	if (!bo->map)
 -		return 0;
-+	pthread_mutex_lock(&table_lock);
++	DBG_BO(bo, "\n");
  
 -	if (munmap(bo->map, bo->size))
 -		return -errno;
++	pthread_mutex_lock(&table_lock);
++
 +	if (bo->mmap_ref == 0)
 +		goto unlock;
 +
 +	if (--bo->mmap_ref > 0)
 +		goto unlock;
-+
-+	VG_BO_UNMMAP(bo);
  
++	VG_BO_UNMMAP(bo);
++
 +	drm_tegra_bo_cache_unmap(bo);
  	bo->map = NULL;
 +unlock:
@@ -1301,7 +1610,7 @@ index f7dc89a..a0c8b32 100644
  
  	return 0;
  }
-@@ -241,7 +383,6 @@ int drm_tegra_bo_unmap(struct drm_tegra_bo *bo)
+@@ -241,7 +618,6 @@ int drm_tegra_bo_unmap(struct drm_tegra_bo *bo)
  int drm_tegra_bo_get_flags(struct drm_tegra_bo *bo, uint32_t *flags)
  {
  	struct drm_tegra_gem_get_flags args;
@@ -1309,20 +1618,29 @@ index f7dc89a..a0c8b32 100644
  	int err;
  
  	if (!bo)
-@@ -250,10 +391,10 @@ int drm_tegra_bo_get_flags(struct drm_tegra_bo *bo, uint32_t *flags)
+@@ -250,21 +626,25 @@ int drm_tegra_bo_get_flags(struct drm_tegra_bo *bo, uint32_t *flags)
  	memset(&args, 0, sizeof(args));
  	args.handle = bo->handle;
  
 -	err = drmCommandWriteRead(drm->fd, DRM_TEGRA_GEM_GET_FLAGS, &args,
 +	err = drmCommandWriteRead(bo->drm->fd, DRM_TEGRA_GEM_GET_FLAGS, &args,
  				  sizeof(args));
- 	if (err < 0)
+-	if (err < 0)
 -		return -errno;
++	if (err < 0) {
++		VDBG_BO(bo, "failed err %d strerror(%s)\n",
++			err, strerror(-err));
 +		return err;
++	}
  
  	if (flags)
  		*flags = args.flags;
-@@ -264,7 +405,6 @@ int drm_tegra_bo_get_flags(struct drm_tegra_bo *bo, uint32_t *flags)
+ 
++	VDBG_BO(bo, "success flags 0x%08X\n", args.flags);
++
+ 	return 0;
+ }
+ 
  int drm_tegra_bo_set_flags(struct drm_tegra_bo *bo, uint32_t flags)
  {
  	struct drm_tegra_gem_get_flags args;
@@ -1330,20 +1648,26 @@ index f7dc89a..a0c8b32 100644
  	int err;
  
  	if (!bo)
-@@ -274,10 +414,10 @@ int drm_tegra_bo_set_flags(struct drm_tegra_bo *bo, uint32_t flags)
+@@ -274,10 +654,15 @@ int drm_tegra_bo_set_flags(struct drm_tegra_bo *bo, uint32_t flags)
  	args.handle = bo->handle;
  	args.flags = flags;
  
 -	err = drmCommandWriteRead(drm->fd, DRM_TEGRA_GEM_SET_FLAGS, &args,
 +	err = drmCommandWriteRead(bo->drm->fd, DRM_TEGRA_GEM_SET_FLAGS, &args,
  				  sizeof(args));
- 	if (err < 0)
+-	if (err < 0)
 -		return -errno;
++	if (err < 0) {
++		VDBG_BO(bo, "failed err %d strerror(%s)\n",
++			err, strerror(-err));
 +		return err;
++	}
++
++	DBG_BO(bo, "success\n");
  
  	return 0;
  }
-@@ -286,7 +426,6 @@ int drm_tegra_bo_get_tiling(struct drm_tegra_bo *bo,
+@@ -286,7 +671,6 @@ int drm_tegra_bo_get_tiling(struct drm_tegra_bo *bo,
  			    struct drm_tegra_bo_tiling *tiling)
  {
  	struct drm_tegra_gem_get_tiling args;
@@ -1351,32 +1675,44 @@ index f7dc89a..a0c8b32 100644
  	int err;
  
  	if (!bo)
-@@ -295,10 +434,10 @@ int drm_tegra_bo_get_tiling(struct drm_tegra_bo *bo,
+@@ -295,16 +679,21 @@ int drm_tegra_bo_get_tiling(struct drm_tegra_bo *bo,
  	memset(&args, 0, sizeof(args));
  	args.handle = bo->handle;
  
 -	err = drmCommandWriteRead(drm->fd, DRM_TEGRA_GEM_GET_TILING, &args,
 +	err = drmCommandWriteRead(bo->drm->fd, DRM_TEGRA_GEM_GET_TILING, &args,
  				  sizeof(args));
- 	if (err < 0)
+-	if (err < 0)
 -		return -errno;
++	if (err < 0) {
++		VDBG_BO(bo, "failed err %d strerror(%s)\n",
++			err, strerror(-err));
 +		return err;
++	}
  
  	if (tiling) {
  		tiling->mode = args.mode;
-@@ -312,10 +451,8 @@ int drm_tegra_bo_set_tiling(struct drm_tegra_bo *bo,
+ 		tiling->value = args.value;
+ 	}
+ 
++	VDBG_BO(bo, "success mode %u value %u\n", args.mode, args.value);
++
+ 	return 0;
+ }
+ 
+@@ -312,10 +701,9 @@ int drm_tegra_bo_set_tiling(struct drm_tegra_bo *bo,
  			    const struct drm_tegra_bo_tiling *tiling)
  {
  	struct drm_tegra_gem_set_tiling args;
 -	struct drm_tegra *drm = bo->drm;
--	int err;
+ 	int err;
  
 -	if (!bo)
 +	if (!bo || !tiling)
  		return -EINVAL;
  
  	memset(&args, 0, sizeof(args));
-@@ -323,10 +460,201 @@ int drm_tegra_bo_set_tiling(struct drm_tegra_bo *bo,
+@@ -323,10 +711,233 @@ int drm_tegra_bo_set_tiling(struct drm_tegra_bo *bo,
  	args.mode = tiling->mode;
  	args.value = tiling->value;
  
@@ -1384,8 +1720,19 @@ index f7dc89a..a0c8b32 100644
 -				  sizeof(args));
 -	if (err < 0)
 -		return -errno;
-+	return drmCommandWriteRead(bo->drm->fd, DRM_TEGRA_GEM_SET_TILING,
-+				   &args, sizeof(args));
++	err = drmCommandWriteRead(bo->drm->fd, DRM_TEGRA_GEM_SET_TILING,
++				  &args, sizeof(args));
++	if (err < 0) {
++		VDBG_BO(bo, "failed mode %u value %u err %d strerror(%s)\n",
++			tiling->mode, tiling->value, err, strerror(-err));
++		return err;
++	}
++
++	VDBG_BO(bo, "success mode %u value %u\n", tiling->mode, tiling->value);
++
++	bo->custom_tiling = (tiling->mode || tiling->value);
++
++	return 0;
 +}
 +
 +int drm_tegra_bo_get_name(struct drm_tegra_bo *bo, uint32_t *name)
@@ -1401,8 +1748,11 @@ index f7dc89a..a0c8b32 100644
 +		args.handle = bo->handle;
 +
 +		err = drmIoctl(bo->drm->fd, DRM_IOCTL_GEM_FLINK, &args);
-+		if (err < 0)
++		if (err < 0) {
++			VDBG_BO(bo, "err %d strerror(%s)\n",
++				err, strerror(-err));
 +			return -errno;
++		}
 +
 +		pthread_mutex_lock(&table_lock);
 +
@@ -1413,6 +1763,8 @@ index f7dc89a..a0c8b32 100644
 +	}
 +
 +	*name = bo->name;
++
++	DBG_BO(bo, "\n");
 +
 +	return 0;
 +}
@@ -1446,6 +1798,8 @@ index f7dc89a..a0c8b32 100644
 +
 +	err = drmIoctl(drm->fd, DRM_IOCTL_GEM_OPEN, &args);
 +	if (err < 0) {
++		VDBG_DRM(drm, "failed name 0x%08X err %d strerror(%s)\n",
++			 name, err, strerror(-err));
 +		err = -errno;
 +		free(bo);
 +		bo = NULL;
@@ -1455,6 +1809,7 @@ index f7dc89a..a0c8b32 100644
 +	/* check handle table second, to see if BO is already open */
 +	dup = lookup_bo(drm->handle_table, args.handle);
 +	if (dup) {
++		VDBG_BO(dup, "success reused name 0x%08X\n", name);
 +		free(bo);
 +		bo = dup;
 +		goto unlock;
@@ -1467,6 +1822,8 @@ index f7dc89a..a0c8b32 100644
 +	bo->flags = flags;
 +	bo->size = args.size;
 +	bo->drm = drm;
++
++	DBG_BO(bo, "success\n");
 +
 +	VG_BO_ALLOC(bo);
 +
@@ -1488,10 +1845,15 @@ index f7dc89a..a0c8b32 100644
 +
 +	err = drmPrimeHandleToFD(bo->drm->fd, bo->handle, DRM_CLOEXEC,
 +				 &prime_fd);
-+	if (err)
++	if (err) {
++		VDBG_BO(bo, "faile err %d strerror(%s)\n",
++			err, strerror(-err));
 +		return err;
++	}
 +
 +	*handle = prime_fd;
++
++	VDBG_BO(bo, "success prime_fd %u\n",  prime_fd);
 +
 +	return 0;
 +}
@@ -1526,6 +1888,7 @@ index f7dc89a..a0c8b32 100644
 +	/* check handle table to see if BO is already open */
 +	dup = lookup_bo(drm->handle_table, handle);
 +	if (dup) {
++		DBG_BO(dup, "success reused\n");
 +		free(bo);
 +		bo = dup;
 +		goto unlock;
@@ -1551,8 +1914,11 @@ index f7dc89a..a0c8b32 100644
 +
 +	/* handle lseek() error */
 +	if (err) {
++		VDBG_BO(bo, "lseek failed %d (%s)\n", err, strerror(-err));
 +		drm_tegra_bo_free(bo);
 +		bo = NULL;
++	} else {
++		DBG_BO(bo, "success\n");
 +	}
 +
 +unlock:
@@ -1579,6 +1945,8 @@ index f7dc89a..a0c8b32 100644
 +		return -EINVAL;
 +
 +	bo->reuse = false;
++
++	DBG_BO(bo, "\n");
  
  	return 0;
  }
@@ -1676,10 +2044,10 @@ index 31b0995..6cd9b6d 100644
  #endif /* __DRM_TEGRA_H__ */
 diff --git a/tegra/tegra_bo_cache.c b/tegra/tegra_bo_cache.c
 new file mode 100644
-index 0000000..542242e
+index 0000000..38f82fa
 --- /dev/null
 +++ b/tegra/tegra_bo_cache.c
-@@ -0,0 +1,296 @@
+@@ -0,0 +1,348 @@
 +/*
 + * Copyright (C) 2016 Rob Clark <robclark@freedesktop.org>
 + *
@@ -1765,8 +2133,10 @@ index 0000000..542242e
 +
 +/* Frees older cached buffers.  Called under table_lock */
 +drm_private void
-+drm_tegra_bo_cache_cleanup(struct drm_tegra_bo_cache *cache, time_t time)
++drm_tegra_bo_cache_cleanup(struct drm_tegra *drm,
++			   time_t time)
 +{
++	struct drm_tegra_bo_cache *cache = &drm->bo_cache;
 +	int i;
 +
 +	if (cache->time == time)
@@ -1787,15 +2157,20 @@ index 0000000..542242e
 +			VG_BO_OBTAIN(bo);
 +			DRMLISTDEL(&bo->bo_list);
 +			drm_tegra_bo_free(bo);
++#ifndef NDEBUG
++			if (drm->debug_bo)
++				drm->debug_bos_cached--;
++#endif
 +		}
 +	}
 +
 +	cache->time = time;
 +}
 +
-+static struct drm_tegra_bo_bucket * get_bucket(struct drm_tegra_bo_cache *cache,
++static struct drm_tegra_bo_bucket * get_bucket(struct drm_tegra *drm,
 +					       uint32_t size)
 +{
++	struct drm_tegra_bo_cache *cache = &drm->bo_cache;
 +	int i;
 +
 +	/* hmm, this is what intel does, but I suppose we could calculate our
@@ -1807,6 +2182,8 @@ index 0000000..542242e
 +			return bucket;
 +		}
 +	}
++
++	VDBG_DRM(drm, "failed size %u bytes\n",  size);
 +
 +	return NULL;
 +}
@@ -1851,14 +2228,18 @@ index 0000000..542242e
 +
 +	VG_BO_OBTAIN(bo);
 +
-+	/* XXX: Error handling? */
-+	drm_tegra_bo_set_flags(bo, flags);
++	if (bo->custom_flags) {
++		/* XXX: Error handling? */
++		drm_tegra_bo_set_flags(bo, flags);
++	}
 +
-+	/* reset tiling mode */
-+	memset(&tiling, 0, sizeof(tiling));
++	if (bo->custom_tiling) {
++		/* reset tiling mode */
++		memset(&tiling, 0, sizeof(tiling));
 +
-+	/* XXX: Error handling? */
-+	drm_tegra_bo_set_tiling(bo, &tiling);
++		/* XXX: Error handling? */
++		drm_tegra_bo_set_tiling(bo, &tiling);
++	}
 +
 +	/* reset reference counters */
 +	atomic_set(&bo->ref, 1);
@@ -1877,14 +2258,14 @@ index 0000000..542242e
 +
 +/* NOTE: size is potentially rounded up to bucket size: */
 +drm_private struct drm_tegra_bo *
-+drm_tegra_bo_cache_alloc(struct drm_tegra_bo_cache *cache,
++drm_tegra_bo_cache_alloc(struct drm_tegra *drm,
 +			 uint32_t *size, uint32_t flags)
 +{
 +	struct drm_tegra_bo *bo = NULL;
 +	struct drm_tegra_bo_bucket *bucket;
 +
 +	*size = align(*size, 4096);
-+	bucket = get_bucket(cache, *size);
++	bucket = get_bucket(drm, *size);
 +
 +	/* see if we can be green and recycle: */
 +	if (bucket) {
@@ -1892,6 +2273,10 @@ index 0000000..542242e
 +		bo = find_in_bucket(bucket, flags);
 +		if (bo) {
 +			reset_bo(bo, flags);
++#ifndef NDEBUG
++			if (drm->debug_bo)
++				drm->debug_bos_cached--;
++#endif
 +			return bo;
 +		}
 +	}
@@ -1900,22 +2285,30 @@ index 0000000..542242e
 +}
 +
 +drm_private int
-+drm_tegra_bo_cache_free(struct drm_tegra_bo_cache *cache,
-+			struct drm_tegra_bo *bo)
++drm_tegra_bo_cache_free(struct drm_tegra_bo *bo)
 +{
-+	struct drm_tegra_bo_bucket *bucket = get_bucket(cache, bo->size);
++	struct drm_tegra *drm = bo->drm;
++	struct drm_tegra_bo_bucket *bucket;
 +
 +	/* see if we can be green and recycle: */
++	bucket = get_bucket(drm, bo->size);
 +	if (bucket) {
 +		struct timespec time;
++
++		DBG_BO(bo, "BO added to cache\n");
 +
 +		clock_gettime(CLOCK_MONOTONIC, &time);
 +
 +		bo->free_time = time.tv_sec;
 +		VG_BO_RELEASE(bo);
++		drm_tegra_bo_cache_cleanup(drm, time.tv_sec);
 +		DRMLISTADDTAIL(&bo->bo_list, &bucket->list);
-+		drm_tegra_bo_cache_cleanup(cache, time.tv_sec);
-+
++#ifndef NDEBUG
++		if (drm->debug_bo) {
++			drm->debug_bos_cached++;
++			DBG_BO_STATS(drm);
++		}
++#endif
 +		return 0;
 +	}
 +
@@ -1923,7 +2316,8 @@ index 0000000..542242e
 +}
 +
 +static void
-+drm_tegra_bo_mmap_cache_cleanup(struct drm_tegra_bo_mmap_cache *cache,
++drm_tegra_bo_mmap_cache_cleanup(struct drm_tegra *drm,
++				struct drm_tegra_bo_mmap_cache *cache,
 +				time_t time)
 +{
 +	struct drm_tegra_bo *bo;
@@ -1940,10 +2334,18 @@ index 0000000..542242e
 +			break;
 +
 +		if (!RUNNING_ON_VALGRIND)
-+			munmap(bo->map_cached, bo->size);
++			munmap(bo->map_cached, bo->offset + bo->size);
 +
 +		DRMLISTDEL(&bo->mmap_list);
 +		bo->map_cached = NULL;
++#ifndef NDEBUG
++		if (drm->debug_bo) {
++			drm->debug_bos_mapped--;
++			drm->debug_bos_mappings_cached--;
++			drm->debug_bos_total_pages -= bo->debug_size / 4096;
++			drm->debug_bos_cached_pages -= bo->debug_size / 4096;
++		}
++#endif
 +	}
 +
 +	cache->time = time;
@@ -1952,7 +2354,8 @@ index 0000000..542242e
 +drm_private void
 +drm_tegra_bo_cache_unmap(struct drm_tegra_bo *bo)
 +{
-+	struct drm_tegra_bo_mmap_cache *cache = &bo->drm->mmap_cache;
++	struct drm_tegra *drm = bo->drm;
++	struct drm_tegra_bo_mmap_cache *cache = &drm->mmap_cache;
 +	struct timespec time;
 +
 +	clock_gettime(CLOCK_MONOTONIC, &time);
@@ -1960,18 +2363,35 @@ index 0000000..542242e
 +	bo->unmap_time = time.tv_sec;
 +	bo->map_cached = bo->map;
 +
-+	drm_tegra_bo_mmap_cache_cleanup(cache, time.tv_sec);
++	drm_tegra_bo_mmap_cache_cleanup(drm, cache, time.tv_sec);
 +	DRMLISTADDTAIL(&bo->mmap_list, &cache->list);
++#ifndef NDEBUG
++	if (drm->debug_bo) {
++		drm->debug_bos_mappings_cached++;
++		drm->debug_bos_cached_pages += bo->debug_size / 4096;
++	}
++#endif
++	DBG_BO(bo, "mapping added to cache\n");
++	DBG_BO_STATS(drm);
 +}
 +
 +drm_private void *
 +drm_tegra_bo_cache_map(struct drm_tegra_bo *bo)
 +{
++#ifndef NDEBUG
++	struct drm_tegra *drm = bo->drm;
++#endif
 +	void *map_cached = bo->map_cached;
 +
 +	if (map_cached) {
 +		DRMLISTDEL(&bo->mmap_list);
 +		bo->map_cached = NULL;
++#ifndef NDEBUG
++		if (drm->debug_bo) {
++			drm->debug_bos_mappings_cached--;
++			drm->debug_bos_cached_pages -= bo->debug_size / 4096;
++		}
++#endif
 +	}
 +
 +	return map_cached;
