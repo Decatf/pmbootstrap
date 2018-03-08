@@ -2,7 +2,7 @@
 pkgname="device-samsung-p4wifi"
 pkgdesc="Galaxy Tab 10.1"
 pkgver=0.1
-pkgrel=5
+pkgrel=6
 url="https://postmarketos.org"
 license="MIT"
 arch="noarch"
@@ -53,7 +53,7 @@ nonfree_firmware() {
 	mkdir "$subpkgdir"
 }
 
-sha512sums="51025b6d7c6fa5b088296c875cfb7342889a78ad73b163db9b0ec88ac919a788ef6eb150c5e46d7a7c2c461e9117fb07b4999e69d948ca0a782a2027dabedec7  deviceinfo
+sha512sums="e0f27fb7b8daf0a61ced8739d3760ca8ecda4206e526c2b8d693e573d1e4a2371e69cc3af4d012134de5df021f13d93bc549430ee0c0277679a7a2f5944a9c24  deviceinfo
 d8ce60ea7acaabf627ddca2f0887a4cda46f313b7aaf7934bef2fef8a6e0798ccefab849e4571e4e3fcd06ae34c1a6efe3b58b401e2e443416f6200e6d4ea769  modules-load.conf
 56b865bab0714aed53bd6535ebefd2f3629ec78786e8f87dcae4637cfacb5912d28dc39d1fe0287d34bb36b4a8371481f54647e1b25190afbcd23ed30fe7edac  modprobe.conf
 484d45274d55e383fcb495c81d0e8e4415f052ae7265bd9e61b1fa4fc59163e5d73c96e65816fdc96bf5050f05cc9558e557f584ba23174dc0db5c5e9d861c83  90-device-samsung-p4wifi-audio.rules
