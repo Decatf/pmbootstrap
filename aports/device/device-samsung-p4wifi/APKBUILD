@@ -2,13 +2,15 @@
 pkgname="device-samsung-p4wifi"
 pkgdesc="Galaxy Tab 10.1"
 pkgver=0.1
-pkgrel=6
+pkgrel=7
 url="https://postmarketos.org"
 license="MIT"
 arch="noarch"
 options="!check"
 depends="postmarketos-base linux-samsung-p4wifi mkbootimg
-	mesa-grate libdrm-grate xf86-video-opentegra"
+	mesa-grate mesa-grate-glapi mesa-grate-gl mesa-grate-gbm mesa-grate-egl
+	mesa-grate-dri-tegra libdrm-grate xf86-video-opentegra
+	alsa-utils"
 makedepends="devicepkg-dev"
 subpackages="$pkgname-nonfree-firmware:nonfree_firmware"
 source="deviceinfo
