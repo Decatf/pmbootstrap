@@ -1,2 +1,5 @@
 SUBSYSTEM=="extcon", ATTR{name}=="sec-jack", ATTR{state}=="HEADPHONE=1", RUN+="/usr/bin/alsaucm -c wm8994aif1 set _verb HiFi set _enadev Headphones"
 SUBSYSTEM=="extcon", ATTR{name}=="sec-jack", ATTR{state}=="HEADPHONE=0", RUN+="/usr/bin/alsaucm -c wm8994aif1 set _verb HiFi set _enadev Speaker"
+
+SUBSYSTEM=="extcon", ATTR{name}=="sec-jack", ATTR{state}=="HEADPHONE=1", RUN+="/usr/bin/alsaucm -c P4WIFI set _verb HiFi set _enadev Headphones"
+SUBSYSTEM=="extcon", ATTR{name}=="sec-jack", ATTR{state}=="HEADPHONE=0", RUN+="/usr/bin/alsaucm -c P4WIFI set _verb HiFi set _enadev Speaker"

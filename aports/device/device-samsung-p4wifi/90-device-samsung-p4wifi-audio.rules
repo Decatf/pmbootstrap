@@ -1,1 +1,2 @@
 ATTRS{id}=="wm8994aif1", RUN+="/usr/bin/alsaucm -c wm8994aif1 set _verb HiFi set _enadev Headphones"
+KERNEL=="card0", SUBSYSTEM=="sound", ATTRS{id}=="P4WIFI", RUN+="/usr/bin/alsaucm -c P4WIFI set _verb HiFi set _enadev Headphones"
