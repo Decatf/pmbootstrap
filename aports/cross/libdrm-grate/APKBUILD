@@ -1,7 +1,7 @@
 _provides_pkgname=libdrm
 pkgname=libdrm-grate
 pkgver=2.4.89
-pkgrel=8
+pkgrel=9
 pkgdesc="Userspace interface to kernel DRM services"
 url="https://www.github.com/grate-driver/"
 arch="all"
@@ -88,4 +88,4 @@ doc() {
 sha512sums="380e4e46cd3971a73264bd1b482791fab0503268adb65ac81b674df009662cfb8ef5741e362f19670b2a43b1c46f022d857706c9a4bebed2b1cddaa317b7706d  libdrm-2.4.89.tar.bz2
 af52fef51aaa05a4dd17919371cb9d92a77480402730bf53ba223e54df52f3825be05a7f28e6aef8c904db5ee59fe38a6c15bc6aafa7f8d31a719e80399dd51f  ioctl.patch
 fe85537761fa8e7a168c2fbfcb6092ba3c34275c2eaa6c8ce2803ccc769a797350f8deacefc94a3479ebef51800808cdd4b4554eee14c1cd8b6f2cc159ab467e  fix-symbol-checks.patch
-984d3f728a9c78482bf3ca267a57bb9c1e4f044d0027f9bde78cac05631ef315d82b673ee3b1891eb32b7235d4aa51ffe268b676c413a136e8c9ab29c1d60cc8  0001-grate-driver.patch"
+f7de72ff6f3a6f0db46d7d1f5a0c363267ac1c07d9a5ba52bc9d00b00aa7979ffe3c4cd4cce0e1e1a69faa75315c0ff2aac2885a098ac54ab72969a77d682959  0001-grate-driver.patch"
