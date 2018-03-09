@@ -1,0 +1,44 @@
+pkgname=twofing
+pkgver=0.1.2.20120708
+pkgrel=0
+pkgdesc="Daemon for two finger gestures"
+url="https://github.com/Plippo/twofing"
+arch="all"
+license="ISC"
+depends=""
+makedepends="build-base linux-headers libxrandr-dev libxtst-dev libx11-dev"
+subpackages=""
+_rev=c647c329d94ce5d8cd2390e769804476d85880db
+source="https://github.com/Plippo/twofing/archive/$_rev.zip
+	0001-Use-busybox-v1.27.2-install-mode.patch"
+
+builddir="$srcdir"/$pkgname-$_rev
+
+prepare() {
+	local i
+	local filename
+
+	cd "$builddir"
+	for i in $source; do
+		case $i in
+			*.patch | *.diff)
+				filename=`basename "$i"`
+				msg $filename
+				patch -p1 -i "$srcdir/$filename"
+			;;
+		esac
+	done
+}
+
+build () {
+	cd "$builddir"
+	make
+}
+
+package() {
+	cd "$builddir"
+	make DESTDIR="$pkgdir" install
+}
+
+sha512sums="387d5908b3ba16d1d47fc9fd106ef3433a78f3ec16c2c948f414cc8c1752c2f67e33ebfbd75f996cf26e1d74e3f27854af1324305210310643c4edcffa335c23  c647c329d94ce5d8cd2390e769804476d85880db.zip
+a2155b7c7ba308b81120d97b4b912313a6ec75b00849015665bc4104b24ca181bdaacbf65eb12b7527851a4147cbc823f420f6daae3f02f972a6f4125a4e0721  0001-Use-busybox-v1.27.2-install-mode.patch"

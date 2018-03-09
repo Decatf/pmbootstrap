@@ -1,0 +1,25 @@
+From c07d4251a1e2ff5b4ad8c3e6403487465fd7d9da Mon Sep 17 00:00:00 2001
+From: ryang <decatf@gmail.com>
+Date: Fri, 9 Mar 2018 10:39:43 -0500
+Subject: [PATCH] Use busybox v1.27.2 install mode
+
+---
+ Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index c1d22c5..a49d45f 100644
+--- a/Makefile
++++ b/Makefile
+@@ -14,7 +14,7 @@ twofing: $(OBJECTS)
+ install:
+ 	mkdir -p $(BINDIR)
+ 	mkdir -p $(DESTDIR)/etc/udev/rules.d/
+-	install --mode=755 $(NAME) $(BINDIR)/
++	install -m 755 $(NAME) $(BINDIR)/
+ 	cp 70-touchscreen-egalax.rules $(DESTDIR)/etc/udev/rules.d/
+ 
+ clean:
+-- 
+2.7.4
+
