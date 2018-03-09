@@ -1,0 +1,30 @@
+pkgname=mousetweaks
+pkgver=3.12.0
+pkgrel=1
+pkgdesc="Mousetweaks Accessibility Software"
+url="https://wiki.gnome.org/Projects/Mousetweaks"
+arch="all"
+license="GPL-3"
+depends="gsettings-desktop-schemas"
+makedepends="glib-dev gsettings-desktop-schemas-dev gtk+3.0-dev
+	intltool libx11-dev libxcursor-dev libxfixes-dev libxtst-dev"
+subpackages="$pkgname-doc"
+source="http://download.gnome.org/sources/mousetweaks/${pkgver%.*}/mousetweaks-$pkgver.tar.xz"
+
+builddir="$srcdir"/$pkgname-$pkgver
+
+build () {
+	cd "$builddir"
+	./configure \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr \
+	make
+}
+
+package() {
+	cd "$builddir"
+	make DESTDIR="$pkgdir" install
+}
+
+sha512sums="9e2180ad6ba1abec34a4e2846c31d9195c835a60657be146f2d9526a9c08b1fa4d5b42003203d7c94ec38066a99f10bcd37057d113c4c57f3e401199138de1c0  mousetweaks-3.12.0.tar.xz"
