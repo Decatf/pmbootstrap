@@ -21,7 +21,8 @@ source="deviceinfo
 	HiFi
 	wm8994aif1.conf
 	HiFi-P4WIFI
-	P4WIFI.conf"
+	P4WIFI.conf
+	90-device-samsung-p4wifi-twofing.rules"
 
 build() {
 	devicepkg_build $startdir $pkgname
@@ -47,6 +48,9 @@ package() {
 		"$pkgdir"/etc/udev/rules.d/90-device-samsung-p4wifi-audio.rules
 	install -D -m644 "$srcdir"/90-device-samsung-p4wifi-jack.rules \
 		"$pkgdir"/etc/udev/rules.d/90-device-samsung-p4wifi-jack.rules
+
+	install -D -m644 "$srcdir"/90-device-samsung-p4wifi-twofing.rules \
+		"$pkgdir"/etc/udev/rules.d/90-device-samsung-p4wifi-twofing.rules
 }
 
 nonfree_firmware() {
@@ -62,5 +66,5 @@ d8ce60ea7acaabf627ddca2f0887a4cda46f313b7aaf7934bef2fef8a6e0798ccefab849e4571e4e
 46aab5ce9a170e743390640fee259af51facdfa9e04c9b24842b40589bd5b25d194dfd0d166e27ac4129889e03913abb72e5468835203a606dd99017876c8204  90-device-samsung-p4wifi-jack.rules
 a62bbae27b3e76e5ba4b3d06fdd3a35e14b69319b213724196b5ab8acf2086bdf6aef3feef20b262294860f03b8b202a094702af458fe1cfff74c5a17a1cd915  HiFi
 16640080221d6ce6b87eb02bef401a18152008f75e52c0db2eee0a67f1ac65fc9ed053cc2388012f3f661e8f5526e8133af4ae2a5176441fde382597c02a75fa  wm8994aif1.conf
-711e56034307374fd44ec3a4c59e27e839ef1ca71f42013931b6e3d6d236ae9c72995d6d682616420a9eafe397f7326e9da647918b18cdc2708bd8dec6b6af1c  HiFi-P4WIFI
+c30e0ac7bd5def5604bf8aef9c722d8540a30f64bb14a5d94bdde541ad88c450fe067682259e106a428385ecbfab9ae68ed8357cebbb3dbbb28cd52ed97e1d76  HiFi-P4WIFI
 dbac778296ab5540f7a69b71a17faf8894d8fb2fe3676403a2c5825aa75beab220b106e066e23237be6c87739f4839cc9c8fbae2cfb2471decdc2642bd78904f  P4WIFI.conf"
