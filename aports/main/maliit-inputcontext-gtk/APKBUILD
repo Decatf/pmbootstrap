@@ -1,0 +1,45 @@
+pkgname=maliit-inputcontext-gtk
+pkgver=0.99.1
+pkgrel=0
+pkgdesc="
+The GTK+ input context for Maliit."
+url="https://github.com/maliit/inputcontext-gtk"
+arch="all"
+license="LGPL"
+depends=""
+makedepends="build-base coreutils cmake qt5-qtbase-dev eudev-dev qt5-qtquickcontrols2-dev qt5-qtdeclarative-dev maliit-framework"
+subpackages=""
+_rev=72d75769b6763391ae30e51ef2178fb294fdb2b7
+source="https://github.com/maliit/inputcontext-gtk/archive/$_rev.tar.gz"
+
+builddir="$srcdir"/inputcontext-gtk-$_rev
+
+prepare() {
+	local i
+	local filename
+
+	cd "$builddir"
+	for i in $source; do
+		case $i in
+			*.patch | *.diff)
+				filename=`basename "$i"`
+				msg $filename
+				patch -p1 -i "$srcdir/$filename"
+			;;
+		esac
+	done
+}
+
+build () {
+	cmake \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DENABLE_X11=ON
+	make
+}
+
+package() {
+	cd "$builddir"
+	make DESTDIR="$pkgdir" install
+}
+sha512sums="ffc54886c3a4121eb4ac2b2761f6cb1a72834a5f5417842a680ac50b43748052e330d1086da3ba7a5f349dc01670bd77fcc87d40b5cf035a670476dcf9756ef9  72d75769b6763391ae30e51ef2178fb294fdb2b7.tar.gz"

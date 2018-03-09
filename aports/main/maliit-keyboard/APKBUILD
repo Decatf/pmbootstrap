@@ -1,0 +1,48 @@
+pkgname=maliit-keyboard
+pkgver=0.1
+pkgrel=1
+pkgdesc="Maliit Keyboard 2 (based on Ubuntu Keyboard)"
+url="https://github.com/maliit/keyboard"
+arch="all"
+license="LGPL"
+depends=""
+makedepends="build-base coreutils cmake qt5-qtbase-dev eudev-dev qt5-qtquickcontrols2-dev qt5-qtdeclarative-dev maliit-framework"
+subpackages=""
+_rev=dfac0c7764f8e8c63ed2ae24a5212c15f7fd1e7c
+source="https://github.com/maliit/keyboard/archive/$_rev.tar.gz
+	disable-deps.patch"
+replaces="maliit-plugins"
+
+builddir="$srcdir"/keyboard-$_rev
+
+prepare() {
+	local i
+	local filename
+
+	cd "$builddir"
+	for i in $source; do
+		case $i in
+			*.patch | *.diff)
+				filename=`basename "$i"`
+				msg $filename
+				patch -p1 -i "$srcdir/$filename"
+			;;
+		esac
+	done
+}
+
+build () {
+	cmake \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-Denable-presage=OFF \
+		-Denable-hunspell=OFF
+	make
+}
+
+package() {
+	cd "$builddir"
+	make DESTDIR="$pkgdir" install
+}
+sha512sums="c58f9881a5119da367672dc5cf83846439b03c45332465d28a4d8c051b565d8e8661a3250ea7b78f6cb871e4e824fc56e064e1f69d5d9d094d00bd34117c56e1  dfac0c7764f8e8c63ed2ae24a5212c15f7fd1e7c.tar.gz
+6fc4f50b01ee0f425c8ee9725dbb6cbfd972bf7814e6a2d1ffab07bebf72e3130833b75414f93072f3751ab65d575a0f7dd18c7b118d09d2a198db24d0ac72ca  disable-deps.patch"

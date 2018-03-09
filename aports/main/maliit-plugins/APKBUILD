@@ -1,0 +1,46 @@
+pkgname=maliit-plugins
+pkgver=0.99.1
+pkgrel=1
+pkgdesc="Contains the reference input method plugins, such as the Maliit Keyboard."
+url="https://github.com/maliit/plugins"
+arch="all"
+license="LGPL"
+depends=""
+makedepends="build-base coreutils cmake qt5-qtbase-dev eudev-dev qt5-qtquickcontrols2-dev qt5-qtdeclarative-dev maliit-framework"
+subpackages=""
+_rev=f7dd58e91013785f29c9d190d333440a8d924c45
+source="https://github.com/maliit/plugins/archive/$_rev.tar.gz"
+
+builddir="$srcdir"/plugins-$_rev
+
+prepare() {
+	local i
+	local filename
+
+	cd "$builddir"
+	for i in $source; do
+		case $i in
+			*.patch | *.diff)
+				filename=`basename "$i"`
+				msg $filename
+				patch -p1 -i "$srcdir/$filename"
+			;;
+		esac
+	done
+}
+
+build () {
+	cmake \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-Denable-docs=OFF \
+		-Denable-hunspell=OFF \
+		-Denable-tests=OFF
+	make
+}
+
+package() {
+	cd "$builddir"
+	make DESTDIR="$pkgdir" install
+}
+sha512sums="0c60fd3ad206faedc63dde463a11762a01a08e6087ab5a893826dd924fea8dad1a8d2d091fae480f1b226a8e91326f4d40d4b8c3b4b9e1a1aa0e5732186646c6  f7dd58e91013785f29c9d190d333440a8d924c45.tar.gz"

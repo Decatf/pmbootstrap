@@ -1,0 +1,52 @@
+pkgname=maliit-framework
+pkgver=0.99.2
+pkgrel=7
+pkgdesc="Core libraries of Maliit and server."
+url="https://github.com/Plippo/twofing"
+arch="all"
+license="LGPL"
+depends="qt5-qtsvg"
+makedepends="build-base cmake coreutils qt5-qtbase-dev eudev-dev qt5-qtquickcontrols2-dev qt5-qtdeclarative-dev"
+subpackages="$pkgname-doc $pkgname-dbg"
+_rev=695b7aae094042880cc59d47f1072827077cd63b
+source="https://github.com/maliit/framework/archive/$_rev.tar.gz
+	fix.patch"
+
+builddir="$srcdir"/framework-$_rev
+
+prepare() {
+	local i
+	local filename
+
+	cd "$builddir"
+	for i in $source; do
+		case $i in
+			*.patch | *.diff)
+				filename=`basename "$i"`
+				msg $filename
+				patch -p1 -i "$srcdir/$filename"
+			;;
+		esac
+	done
+}
+
+build () {
+	cmake \
+		-DCMAKE_BUILD_TYPE=Debug \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-DINCLUDE_INSTALL_DIR=/usr/include \
+		-Denable-wayland=OFF \
+		-Denable-docs=OFF \
+		-Denable-qt5-inputcontext=ON \
+		-DCMAKE_CXX_FLAGS_DEBUG="-O0 -g2"
+	make
+}
+
+package() {
+	cd "$builddir"
+	make DESTDIR="$pkgdir" install
+}
+sha512sums="549fe252d2bf2f686899c251957de85fcd5b744c49036504a3584851c1c90b23005019acff408dd5b7f78a65a848ed1ab21ff5555172643e8efc8020a871275c  695b7aae094042880cc59d47f1072827077cd63b.tar.gz
+0b026e05aee534ce90c90b476e11cfa565ea1d362e1821c3b6774c3fe0582dc009031a4d7f50cbf7525a268abadfe255514626b2a550921d4595d2340678bff6  fix.patch"
+
+

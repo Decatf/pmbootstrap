@@ -1,0 +1,11 @@
+diff --git a/maliit-glib/maliit-glib.pc.in b/maliit-glib/maliit-glib.pc.in
+index 11019db..32d458f 100644
+--- a/maliit-glib/maliit-glib.pc.in
++++ b/maliit-glib/maliit-glib.pc.in
+@@ -7,5 +7,5 @@ Name: Maliit-GLib
+ Description: Maliit provides a flexible and cross platform input method framework. It is usable on all MeeGo user experiences, and in other GNU/Linux distributions as well.
+ Version: @PROJECT_VERSION@
+ Requires: gobject-2.0 gio-2.0
+-Cflags: -I${includedir}/maliit
++Cflags: -I${includedir}/maliit-2
+ Libs: -L${libdir} -lmaliit-glib
