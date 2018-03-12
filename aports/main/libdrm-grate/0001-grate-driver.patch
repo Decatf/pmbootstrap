@@ -1,6 +1,6 @@
-From aec20a22e2c2fa8e6414222e1f80a262eaeaf89a Mon Sep 17 00:00:00 2001
+From 2a3f4193a407fcd54644c535712fd71296708ec0 Mon Sep 17 00:00:00 2001
 From: ryang <decatf@gmail.com>
-Date: Thu, 8 Mar 2018 14:55:03 -0500
+Date: Mon, 12 Mar 2018 17:26:27 -0400
 Subject: [PATCH] grate-driver
 
 ---
@@ -8,13 +8,14 @@ Subject: [PATCH] grate-driver
  tegra/channel.c          | 133 +++++++++
  tegra/fence.c            |  56 ++++
  tegra/job.c              | 185 ++++++++++++
- tegra/private.h          | 291 ++++++++++++++++++-
+ tegra/meson.build        |  14 +-
+ tegra/private.h          | 292 ++++++++++++++++++-
  tegra/pushbuf.c          | 231 +++++++++++++++
  tegra/tegra-symbol-check |  18 ++
  tegra/tegra.c            | 719 +++++++++++++++++++++++++++++++++++++++++++----
  tegra/tegra.h            |  69 ++++-
  tegra/tegra_bo_cache.c   | 348 +++++++++++++++++++++++
- 10 files changed, 2002 insertions(+), 58 deletions(-)
+ 11 files changed, 2015 insertions(+), 60 deletions(-)
  create mode 100644 tegra/channel.c
  create mode 100644 tegra/fence.c
  create mode 100644 tegra/job.c
@@ -442,13 +443,44 @@ index 0000000..55ef528
 +
 +	return 0;
 +}
+diff --git a/tegra/meson.build b/tegra/meson.build
+index 7c671cd..de1ce4d 100644
+--- a/tegra/meson.build
++++ b/tegra/meson.build
+@@ -18,12 +18,22 @@
+ # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ # SOFTWARE.
+ 
++files_tegra = files(
++  'channel.c',
++  'fence.c',
++  'job.c',
++  'private.h',
++  'pushbuf.c',
++  'tegra_bo_cache.c',
++  'tegra.c',
++)
++
+ libdrm_tegra = shared_library(
+   'drm_tegra',
+-  [files('tegra.c'), config_file],
++  [files_tegra, config_file],
+   include_directories : [inc_root, inc_drm],
+   link_with : libdrm,
+-  dependencies : [dep_pthread_stubs],
++  dependencies : [dep_pthread_stubs,dep_valgrind],
+   c_args : warn_c_args,
+   version : '0.0.0',
+   install : true,
 diff --git a/tegra/private.h b/tegra/private.h
-index bb6c1a5..32ca191 100644
+index bb6c1a5..16f8ce1 100644
 --- a/tegra/private.h
 +++ b/tegra/private.h
-@@ -26,26 +26,315 @@
+@@ -25,27 +25,317 @@
+ #ifndef __DRM_TEGRA_PRIVATE_H__
  #define __DRM_TEGRA_PRIVATE_H__ 1
  
++#include <inttypes.h>
  #include <stdbool.h>
 +#include <stddef.h>
  #include <stdint.h>
@@ -682,7 +714,7 @@ index bb6c1a5..32ca191 100644
 + * For tracking the backing memory (if valgrind enabled, we force a mmap
 + * for the purposes of tracking)
 + */
-+static inline void VG_BO_ALLOC(struct drm_tegra_bo *bo)
++static void __attribute__((unused)) VG_BO_ALLOC(struct drm_tegra_bo *bo)
 +{
 +	if (RUNNING_ON_VALGRIND) {
 +		__drm_tegra_bo_map(bo, &bo->map_vg);
@@ -691,7 +723,7 @@ index bb6c1a5..32ca191 100644
 +	}
 +}
 +
-+static inline void VG_BO_FREE(struct drm_tegra_bo *bo)
++static void __attribute__((unused)) VG_BO_FREE(struct drm_tegra_bo *bo)
 +{
 +	if (RUNNING_ON_VALGRIND)
 +		munmap(bo->map_vg, bo->size);
@@ -707,7 +739,7 @@ index bb6c1a5..32ca191 100644
 + * valgrind doesn't squawk about list traversal.
 + *
 + */
-+static inline void VG_BO_RELEASE(struct drm_tegra_bo *bo)
++static void __attribute__((unused)) VG_BO_RELEASE(struct drm_tegra_bo *bo)
 +{
 +	if (RUNNING_ON_VALGRIND) {
 +		/*
@@ -726,7 +758,7 @@ index bb6c1a5..32ca191 100644
 +		VALGRIND_MAKE_MEM_NOACCESS(bo, offsetof(typeof(*bo), bo_list));
 +	}
 +}
-+static inline void VG_BO_OBTAIN(struct drm_tegra_bo *bo)
++static void __attribute__((unused)) VG_BO_OBTAIN(struct drm_tegra_bo *bo)
 +{
 +	if (RUNNING_ON_VALGRIND) {
 +		/* restore BO memory accesses in valgrind */
@@ -742,12 +774,12 @@ index bb6c1a5..32ca191 100644
 + * mapped region as freed on BO unmapping in order to catch invalid
 + * memory accesses.
 + */
-+static inline void VG_BO_MMAP(struct drm_tegra_bo *bo)
++static void __attribute__((unused)) VG_BO_MMAP(struct drm_tegra_bo *bo)
 +{
 +	if (RUNNING_ON_VALGRIND)
 +		VALGRIND_MALLOCLIKE_BLOCK(bo->map_vg, bo->size, 0, 1);
 +}
-+static inline void VG_BO_UNMMAP(struct drm_tegra_bo *bo)
++static void __attribute__((unused)) VG_BO_UNMMAP(struct drm_tegra_bo *bo)
 +{
 +	if (RUNNING_ON_VALGRIND)
 +		VALGRIND_FREELIKE_BLOCK(bo->map_vg, 0);
@@ -1001,7 +1033,7 @@ index 0000000..b4cd5e4
 +	return 0;
 +}
 diff --git a/tegra/tegra-symbol-check b/tegra/tegra-symbol-check
-index 420469f..a72ee74 100755
+index 509b678..c6803e9 100755
 --- a/tegra/tegra-symbol-check
 +++ b/tegra/tegra-symbol-check
 @@ -26,6 +26,24 @@ drm_tegra_bo_unref
@@ -1030,7 +1062,7 @@ index 420469f..a72ee74 100755
  done)
  
 diff --git a/tegra/tegra.c b/tegra/tegra.c
-index f7dc89a..1b539ce 100644
+index f7dc89a..ab5aee9 100644
 --- a/tegra/tegra.c
 +++ b/tegra/tegra.c
 @@ -28,6 +28,7 @@
@@ -1153,7 +1185,7 @@ index f7dc89a..1b539ce 100644
 +			guard = bo->guard_front[i];
 +
 +			if (guard != guard_check) {
-+				VDBG_BO(bo, "front guard is corrupted: entry %u is 0x%16llX, should be 0x%16llX\n",
++				VDBG_BO(bo, "front guard is corrupted: entry %u is 0x%16" PRIX64 ", should be 0x%16" PRIX64 "\n",
 +					i, guard, guard_check);
 +				abort();
 +			}
@@ -1165,7 +1197,7 @@ index f7dc89a..1b539ce 100644
 +			guard = bo->guard_back[i];
 +
 +			if (guard != guard_check) {
-+				VDBG_BO(bo, "back guard is corrupted: entry %u is 0x%16llX, should be 0x%16llX\n",
++				VDBG_BO(bo, "back guard is corrupted: entry %u is 0x%16" PRIX64 ", should be 0x%16" PRIX64 "\n",
 +					i, guard, guard_check);
 +				abort();
 +			}
