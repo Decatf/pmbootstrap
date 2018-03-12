@@ -199,7 +199,10 @@ def init_buildenv(args, apkbuild, arch, strict=False, force=False, cross=None,
     if cross == "native":
         depends, built = build_depends(args, apkbuild, args.arch_native, strict)
         if not strict and len(depends):
-            pmb.chroot.apk.install(args, depends)
+            # pmb.chroot.apk.install(args, depends)
+            native_cross_with_deps = cross == "native" and "!tracedeps" not in apkbuild["options"]
+            deps_sysroot_suffix = "buildroot_" + arch if native_cross_with_deps else suffix
+            pmb.chroot.apk.install(args, depends, deps_sysroot_suffix)
 
     return True
 
@@ -344,6 +347,28 @@ def run_abuild(args, apkbuild, arch, strict=False, force=False, cross=None,
         hostspec = pmb.parse.arch.alpine_to_hostspec(arch)
         env["CROSS_COMPILE"] = hostspec + "-"
         env["CC"] = hostspec + "-gcc"
+
+        native_cross_with_deps = cross == "native" and "!tracedeps" not in apkbuild["options"]
+        if native_cross_with_deps:
+            # bind mount sysroot into native and set env to point to it
+            foreign_sysroot_path = args.work + "/chroot_buildroot_" + arch
+            cbuildroot = "/home/user/cross_sysroot/chroot_buildroot_" + arch
+            bind_sysroot_path = args.work + "/chroot_native" + cbuildroot
+            pmb.helpers.mount.bind(args, foreign_sysroot_path, bind_sysroot_path)
+            # https://dev.alpinelinux.org/~tteras/bootstrap/abuild-crossbuild-aarch64.conf
+            env["CBUILDROOT"] = cbuildroot
+            env["CHOST"] = hostspec
+            # env["CROSS_CFLAGS"] = "--sysroot=" + cbuildroot
+            env["CPPFLAGS"] = "--sysroot=" + cbuildroot
+            env["CFLAGS"] = "--sysroot=" + cbuildroot
+            env["CXXFLAGS"] = "--sysroot=" + cbuildroot
+            # env["CXX11_CXXFLAGS"] = "--sysroot=" + cbuildroot
+            env["LDFLAGS"] = " -L" + cbuildroot + "/lib" + " -L" + cbuildroot + "/usr/lib"
+            # FIXME: this isn't enough; SDL's pkg-config still returns just /usr/include/SDL
+            # Need to make a wrapper script that sets these immediately before running real pkg-config
+            env["PKG_CONFIG_PATH"] = cbuildroot + "/usr/lib/pkgconfig/:" + cbuildroot + "/usr/share/pkgconfig"
+            env["PKG_CONFIG_SYSROOT_DIR"] = cbuildroot
+
     if cross == "distcc":
         env["CCACHE_PREFIX"] = "distcc"
         env["CCACHE_PATH"] = "/usr/lib/arch-bin-masquerade/" + arch + ":/usr/bin"
