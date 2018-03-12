@@ -130,7 +130,15 @@ override_package() {
 
 dev() {
 	default_dev
-	provides="mesa-dev"
+	provides="mesa-dev
+		pc:dri=18.1.0
+		pc:egl=18.1.0
+		pc:gbm=18.1.0
+		pc:gl=18.1.0
+		pc:glesv1_cm=18.1.0
+		pc:glesv2=18.1.0
+		pc:wayland-egl=18.1.0
+		"
 }
 
 doc() {
