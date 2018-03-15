@@ -1,0 +1,26 @@
+pkgname=audio-route-config
+pkgver=0.0.1
+pkgrel=0
+pkgdesc="Configure ALSA mixer controls from Android mixer_paths.xml"
+url="https://github.com/Decatf/audio-route-config"
+arch="armhf"
+license="BSD"
+depends="audio-route"
+makedepends="audio-route"
+subpackages=""
+_rev="a5ecfecc3efd9b14b9c1c559fb4d7c931030585c"
+source="https://github.com/Decatf/audio-route-config/archive/$_rev.tar.gz"
+
+builddir="$srcdir/${pkgname}-${_rev}"
+
+build(){
+	cd "$builddir"
+	make
+}
+
+package() {
+	cd "$builddir"
+	make PREFIX=/usr DESTDIR="$pkgdir" install
+}
+
+sha512sums="350c51ee8b30686b04b7de38d42eb790d8c6448caae12fe7139f84cb322adf50935fd1b208484e8bf7d293746fe230fbef91fa81a88d86bcd4a78f0b874da7ab  a5ecfecc3efd9b14b9c1c559fb4d7c931030585c.tar.gz"
