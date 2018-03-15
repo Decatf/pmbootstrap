@@ -1,0 +1,26 @@
+pkgname=audio-route
+pkgver=0.0.1
+pkgrel=0
+pkgdesc="Android audio_route library"
+url="https://github.com/Decatf/audio-route"
+arch="armhf"
+license="BSD"
+depends="expat tinyalsa"
+makedepends="tinyalsa expat-dev"
+subpackages=""
+_rev="437316dc19cc55f6cb40cb8b5eae89e16a2fed73"
+source="https://github.com/Decatf/audio-route/archive/$_rev.tar.gz"
+
+builddir="$srcdir/${pkgname}-${_rev}"
+
+build(){
+	cd "$builddir"
+	make
+}
+
+package() {
+	cd "$builddir"
+	make PREFIX=/usr DESTDIR="$pkgdir" install
+}
+
+sha512sums="4450bc31d4eb12d11eeef3485c705baa5850d55f50568c84b8285c82e163228f275d9661fcf334ca2e59a23413cab98f422c1084337beef99685f5193f0fa9d1  437316dc19cc55f6cb40cb8b5eae89e16a2fed73.tar.gz"

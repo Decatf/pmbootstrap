@@ -1,0 +1,26 @@
+pkgname=tinyalsa
+pkgver=0.0.1
+pkgrel=0
+pkgdesc="Tiny library to interface with ALSA in the Linux kernel"
+url="https://github.com/tinyalsa/tinyalsa"
+arch="armhf"
+license="BSD"
+depends=""
+makedepends="linux-headers"
+subpackages="$pkgname-doc"
+_rev="b038ae7a5bb0c6744c6732ea6c3575adb0904220"
+source="https://github.com/tinyalsa/tinyalsa/archive/$_rev.tar.gz"
+
+builddir="$srcdir/${pkgname}-${_rev}"
+
+build(){
+	cd "$builddir"
+	make
+}
+
+package() {
+	cd "$builddir"
+	make PREFIX=/usr DESTDIR="$pkgdir" install
+}
+
+sha512sums="a1a2fbb50cad5e9079dfc8489ee24c5053f51b8ad3ee4b2c9420b8218089e69079ccd53a3696707fc879476c49f27f8b2aef5618a89025534c04e29b4dc4d380  b038ae7a5bb0c6744c6732ea6c3575adb0904220.tar.gz"
