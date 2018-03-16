@@ -1,0 +1,87 @@
+diff --git a/src/libgrate/grate.c b/src/libgrate/grate.c
+index 09079f8..c71e4a4 100755
+--- a/src/libgrate/grate.c
++++ b/src/libgrate/grate.c
+@@ -33,6 +33,7 @@
+ #include <string.h>
+ #include <termios.h>
+ #include <unistd.h>
++#include <sys/select.h>
+ 
+ #include "../libhost1x/host1x-private.h"
+ #include "libgrate-private.h"
+diff --git a/src/libhost1x/host1x-drm.c b/src/libhost1x/host1x-drm.c
+index 03ed049..e4d8579 100644
+--- a/src/libhost1x/host1x-drm.c
++++ b/src/libhost1x/host1x-drm.c
+@@ -432,7 +432,7 @@ static int drm_bo_mmap(struct host1x_bo *bo)
+ 		return -errno;
+ 
+ 	ptr = mmap(NULL, orig->size, PROT_READ | PROT_WRITE, MAP_SHARED,
+-		   drm->drm->fd, (__off_t)args.offset);
++		   drm->drm->fd, (off_t)args.offset);
+ 	if (ptr == MAP_FAILED)
+ 		return -errno;
+ 
+diff --git a/src/libhost1x/nvhost-display.c b/src/libhost1x/nvhost-display.c
+index aa5509a..13049dc 100644
+--- a/src/libhost1x/nvhost-display.c
++++ b/src/libhost1x/nvhost-display.c
+@@ -130,7 +130,7 @@ static int overlay_create(struct host1x_display *displayp,
+ {
+ 	struct nvhost_display *display = to_nvhost_display(displayp);
+ 	int plane = TEGRA_DC_EXT_FLIP_N_WINDOWS;
+-	int err;
++	int err = 0;
+ 
+ 	while (--plane >= 0) {
+ 		err = ioctl(display->fd, TEGRA_DC_EXT_GET_WINDOW, plane);
+diff --git a/src/libwrap/syscall.c b/src/libwrap/syscall.c
+index 042aa8b..0380ef0 100644
+--- a/src/libwrap/syscall.c
++++ b/src/libwrap/syscall.c
+@@ -42,7 +42,7 @@
+ #include "utils.h"
+ #include "list.h"
+ 
+-static pthread_mutex_t ioctl_lock = PTHREAD_MUTEX_INITIALIZER;
++// static pthread_mutex_t ioctl_lock = PTHREAD_MUTEX_INITIALIZER;
+ 
+ static void *dlopen_helper(const char *name)
+ {
+@@ -101,7 +101,7 @@ int open(const char *pathname, int flags, ...)
+ 	printf("%s() = %d\n", __func__, ret);
+ 	return ret;
+ }
+-
++#if 0
+ int open64(const char *pathname, int flags, ...)
+ {
+ 	va_list argp;
+@@ -113,7 +113,7 @@ int open64(const char *pathname, int flags, ...)
+ 
+ 	return ret;
+ }
+-
++#endif
+ int close(int fd)
+ {
+ 	static typeof(close) *orig = NULL;
+@@ -171,7 +171,7 @@ ssize_t write(int fd, const void *buffer, size_t size)
+ 	printf("%s() = %zd\n", __func__, ret);
+ 	return ret;
+ }
+-
++#if 0
+ static long timespec_diff_in_us(struct timespec *t1, struct timespec *t2)
+ {
+ 	struct timespec diff;
+@@ -247,7 +247,7 @@ int ioctl(int fd, unsigned long request, ...)
+ 	printf("%s() = %d\n", __func__, ret);
+ 	return ret;
+ }
+-
++#endif
+ void *mmap_orig(void *addr, size_t length, int prot, int flags, int fd, off_t offset)
+ {
+ 	static typeof(mmap_orig) *orig = NULL;

@@ -1,0 +1,32 @@
+pkgname=devil
+pkgver=1.8.0
+pkgrel=1
+pkgdesc="Developer's Image Library (DevIL)"
+url="https://github.com/DentonW/DevIL"
+arch="armhf"
+license="GPL2"
+subpackages="$pkgname-dev"
+depends=
+makedepends="cmake libpng-dev zlib-dev libjpeg-turbo-dev tiff-dev libmng-dev lcms2-dev jasper-dev"
+branch=a2d9193fed0c7f93519c0c4c28b3348e0cb5759b
+source="https://github.com/DentonW/DevIL/archive/$branch.tar.gz
+	off_t.patch
+	"
+# builddir="$srcdir"/$pkgname-$pkgver
+builddir="$srcdir"/DevIL-$branch
+
+build() {
+	cd "$builddir/DevIL"
+	cmake \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_INSTALL_PREFIX=/usr
+	make
+
+}
+
+package() {
+	cd "$builddir/DevIL"
+	make DESTDIR="$pkgdir" install
+}
+
+sha512sums="cbbae31f436d243cdedddd9d79ab09cf3bb3022b17fb77ddb2a66c5922fab463c56ebeb1b10a1e2a90a14a73ec9ad8214a73c81cbed3c61c4d171260aedd96fc  a2d9193fed0c7f93519c0c4c28b3348e0cb5759b.tar.gz"

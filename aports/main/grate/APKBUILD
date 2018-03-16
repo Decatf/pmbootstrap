@@ -1,0 +1,57 @@
+pkgname=grate
+pkgver=0.0.1
+pkgrel=0
+pkgdesc="Grate: Open source Tegra2+ 2D/3D user-space"
+url="https://github.com/grate-driver/grate"
+arch="armhf"
+license="GPL2"
+subpackages=""
+depends="devil"
+makedepends="util-macros libtool m4 automake autoconf bison flex
+	devil-dev libx11-dev libxcb-dev libpng-dev libdrm-grate-dev mesa-grate-dev xcb-util-image-dev zlib-dev"
+branch=e67746440c6b34f6015c457909240b1650a032d7
+source="https://github.com/grate-driver/grate/archive/$branch.tar.gz
+	off_t.patch
+	"
+
+# builddir="$srcdir"/$pkgname-$pkgver
+builddir="$srcdir"/$pkgname-$branch
+
+prepare() {
+	local i
+	local filename
+
+	cd "$builddir"
+	for i in $source; do
+		case $i in
+			*.patch | *.diff)
+				filename=`basename "$i"`
+				msg $filename
+				patch -p1 -i "$srcdir/$filename"
+			;;
+		esac
+	done
+}
+
+build() {
+	cd "$builddir"
+	export CFLAGS="$CFLAGS -Wno-unused-variable -Wno-format"
+	./autogen.sh \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr
+	make
+}
+
+check() {
+	cd "$builddir"
+	make check
+}
+
+package() {
+	cd "$builddir"
+	make DESTDIR="$pkgdir" install
+}
+
+sha512sums="a3bae2d028c134281fd168fab07ba1d9f050bf0dd1de0e2ba148b18192894777574b492565fb09dc3f156b095c3306cb69508bae6ada1da1a519cd4f3dbcf267  e67746440c6b34f6015c457909240b1650a032d7.tar.gz
+37059b74f3e09584aa48d4de6537c87d1dba17c931670a6a4dbce2f8de4b2c06626655e4f8a5946d06a8a749cbdf61d8007eee3a53b6e9b9e9b764c4d129840c  off_t.patch"
