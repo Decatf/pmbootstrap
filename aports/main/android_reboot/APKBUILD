@@ -1,0 +1,24 @@
+pkgname=android_reboot
+pkgver=1
+pkgrel=15
+pkgdesc="Android reboot method"
+url="https://en.wikipedia.org/wiki/%22Hello,_World!%22_program"
+arch="all"
+license="GPL2"
+depends=""
+makedepends=""
+subpackages=""
+source="android_reboot.c Makefile"
+options=""
+
+build() {
+	cd "$srcdir"
+	make
+}
+
+package() {
+	install -D -m755 "$srcdir"/android_reboot \
+		"$pkgdir"/usr/bin/android_reboot
+}
+sha512sums="5a2e805c35eba09ceb3fb682f69f9e61fa2cc3f03c6480f25512f6462d102e3b8081ea2b5de141f6e0e482e4ba3c50bd2c65df968ba1df773d7722bf581aa454  android_reboot.c
+854498fb7422e03efa2e9df19e093a73fab141b3fbf4d6cee16431d998839776df96b6c099eb58ba5cea4af5fc85397a5b08736f82109345a38cf29b6eddde30  Makefile"
