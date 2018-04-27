@@ -1,11 +1,11 @@
 pkgname=postmarketos-ui-xfce4
 pkgver=0.2
-pkgrel=0
+pkgrel=1
 pkgdesc="(X11) Lightweight GTK+2 desktop (stylus recommended)"
 url="https://github.com/postmarketOS/xfce4-phone"
 arch="noarch"
 license="GPL3"
-depends="xfce4 xorg-server mesa-egl postmarketos-artwork-wallpapers faenza-icon-theme xfce4-battery-plugin"
+depends="xfce4 xorg-server mesa-egl postmarketos-artwork-wallpapers faenza-icon-theme xfce4-battery-plugin gtk+2.0"
 makedepends=""
 install="$pkgname.post-install"
 subpackages=""
