@@ -1,0 +1,68 @@
+pkgname=libdrm-grate
+pkgver=2.4.91
+pkgrel=0
+pkgdesc="Userspace interface to kernel DRM services"
+url="https://www.github.com/grate-driver/"
+arch="all"
+# Requires a computer with gfx, no X running, build user in 'video' group..
+options="!check"
+license="MIT"
+depends=""
+depends_dev="linux-headers"
+makedepends="$depends_dev libpthread-stubs eudev-dev libpciaccess-dev xmlto
+	autoconf automake libtool m4 util-macros"
+checkdepends="cunit-dev bash"
+subpackages="$pkgname-dev $pkgname-doc"
+_rev=2e6927aaba3b327d475950ac51206bc427177f97
+source="https://github.com/grate-driver/libdrm/archive/$_rev.tar.gz
+	ioctl.patch
+	"
+
+_provides_pkgname=libdrm
+replaces="$_provides_pkgname $_provides_pkgname-dev $_provides_pkgname-doc"
+provides="$_provides_pkgname"
+builddir="$srcdir/$_provides_pkgname-$_rev"
+
+build() {
+	cd "$builddir"
+	export VALGRIND_CFLAGS="$VALGRIND_CFLAGS -I/usr/include/valgrind/"
+	./autogen.sh \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr \
+		--sysconfdir=/etc \
+		--mandir=/usr/share/man \
+		--localstatedir=/var \
+		--enable-freedreno \
+		--enable-tegra-experimental-api \
+		--enable-udev \
+		--disable-valgrind
+}
+
+check() {
+	cd "$builddir"
+	make check
+}
+
+package() {
+	cd "$builddir"
+	make DESTDIR="$pkgdir" install
+}
+
+override_package() {
+	provides="${subpkgname/${pkgname}/${_provides_pkgname}}"
+	replaces="${subpkgname/${pkgname}/${_provides_pkgname}}"
+}
+
+dev() {
+	default_dev
+	override_package
+}
+
+doc() {
+	default_doc
+	override_package
+}
+
+sha512sums="167d52d1a0695759e928668a9aa47d08c305c9c852153c93f81b04d97bdcb151abbbade5e88102da995071a7356a0bd0da8527df0e6a62839503833eae9177d6  2e6927aaba3b327d475950ac51206bc427177f97.tar.gz
+af52fef51aaa05a4dd17919371cb9d92a77480402730bf53ba223e54df52f3825be05a7f28e6aef8c904db5ee59fe38a6c15bc6aafa7f8d31a719e80399dd51f  ioctl.patch"
