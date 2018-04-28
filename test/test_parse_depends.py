@@ -96,8 +96,27 @@ def test_package_provider(args, monkeypatch):
     assert func(args, pkgname, pkgnames_install) == package
 
     # 5. Pick the first one
+    # installed = {}
+    # assert func(args, pkgname, pkgnames_install) == package
+
+    # X. One package is a replacement for the other.
+    dependency = "libtest.so"
+    package = {"pkgname": "test-one", "version": "1234", "provides": [dependency, ]}
+    package_two = {"pkgname": "test-two", "provides": [ "test-one", dependency, ]}
+    providers = {"test-two": package_two, "test-one": package}
     installed = {}
-    assert func(args, pkgname, pkgnames_install) == package
+    assert func(args, dependency, pkgnames_install) == package
+
+    # X. Multiple original providers for a dependency.
+    dependency = "libtest.so"
+    package = {"pkgname": "test-one", "version": "1234", "provides": [dependency, ]}
+    package_two = {"pkgname": "test-two", "provides": [dependency, ]}
+    package_three = {"pkgname": "test-three", "provides": ["test-two", dependency, ]}
+    providers = {"test-three": package_three, "test-two": package_two, "test-one": package}
+    installed = {}
+    with pytest.raises(Exception) as excinfo:
+        func(args, dependency, pkgnames_install)
+    assert "Multiple original providers:" in str(excinfo.value)
 
 
 def test_package_from_index(args, monkeypatch):

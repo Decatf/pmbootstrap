@@ -45,6 +45,32 @@ def package_from_aports(args, pkgname_depend):
             "depends": apkbuild["depends"],
             "version": version}
 
+def original_providers(args, dependency, providers):
+    """
+    :param providers: providers for a particular dependency
+    :returns: List of package name of providers which aren't an alternate
+              for another provider.
+    """
+    valid_providers = []
+
+    for provider_i in providers:
+        package_i = providers[provider_i]
+        pkgname_i = package_i['pkgname']
+        pkg_provides = package_i['provides']
+        is_replacement = False
+
+        for provider_j in providers:
+            pkgname_j = providers[provider_j]['pkgname']
+            if pkgname_i == pkgname_j:
+                continue
+            if pkgname_j in pkg_provides:
+                logging.debug(pkgname_i + " replaces: " + pkgname_j)
+                is_replacement = True
+                break
+        if is_replacement == False:
+            logging.debug(pkgname_i + " is an original provider for " + dependency)
+            valid_providers.append(provider_i)
+    return valid_providers
 
 def package_provider(args, pkgname, pkgnames_install, suffix="native"):
     """
@@ -88,12 +114,29 @@ def package_provider(args, pkgname, pkgnames_install, suffix="native"):
                             " the '" + suffix + "' chroot already")
             return provider
 
-    # 5. Pick the first one
-    provider_pkgname = list(providers.keys())[0]
-    logging.debug(pkgname + " has multiple providers (" +
-                  ", ".join(providers) + "), picked: " + provider_pkgname)
-    return providers[provider_pkgname]
+    # X. Pick the package that isn't replacement for another package
+    valid_providers = original_providers(args, pkgname, providers)
+    if len(valid_providers) == 1:
+        provider_pkgname = valid_providers[0]
+        logging.debug("Case X: " + pkgname + " has multiple providers (" +
+                      ", ".join(providers) + ") and one original provider. "
+                      + " Using: " + provider_pkgname)
+        return providers[provider_pkgname]
 
+    # TODO:
+    #  Should it actually fail here and force the user to resolve the dependency?
+    if len(valid_providers) == 0:
+        raise Exception("No original providers found.")
+    elif len(valid_providers) > 1:
+        raise Exception("Multiple original providers: " + str(valid_providers))
+
+    # 5. Pick the first one
+    # provider_pkgname = list(providers.keys())[0]
+    # logging.debug(pkgname + " has multiple providers (" +
+    #               ", ".join(providers) + "), picked: " + provider_pkgname)
+    # return providers[provider_pkgname]
+
+    return None
 
 def package_from_index(args, pkgname_depend, pkgnames_install, package_aport,
                        suffix="native"):
