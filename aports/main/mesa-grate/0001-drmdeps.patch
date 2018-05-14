@@ -1,0 +1,39 @@
+From ed0b49b600d1225bd25b403ff6a0f9131f6a7681 Mon Sep 17 00:00:00 2001
+From: ryang <decatf@gmail.com>
+Date: Wed, 21 Feb 2018 12:01:19 -0500
+Subject: [PATCH 1/4] drmdeps
+
+---
+ src/gallium/winsys/amdgpu/drm/Makefile.am | 2 +-
+ src/gallium/winsys/radeon/drm/Makefile.am | 2 ++
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/gallium/winsys/amdgpu/drm/Makefile.am b/src/gallium/winsys/amdgpu/drm/Makefile.am
+index e35fa2c..eed8301 100644
+--- a/src/gallium/winsys/amdgpu/drm/Makefile.am
++++ b/src/gallium/winsys/amdgpu/drm/Makefile.am
+@@ -11,7 +11,7 @@ AM_CXXFLAGS = $(AM_CFLAGS)
+ noinst_LTLIBRARIES = libamdgpuwinsys.la
+ 
+ libamdgpuwinsys_la_LIBADD = \
+-   $(top_builddir)/src/amd/addrlib/libamdgpu_addrlib.la
++   $(top_builddir)/src/amd/addrlib/libamdgpu_addrlib.la -ldrm_amdgpu
+ 
+ libamdgpuwinsys_la_SOURCES = $(C_SOURCES)
+ 
+diff --git a/src/gallium/winsys/radeon/drm/Makefile.am b/src/gallium/winsys/radeon/drm/Makefile.am
+index c94c9b3..271cba2 100644
+--- a/src/gallium/winsys/radeon/drm/Makefile.am
++++ b/src/gallium/winsys/radeon/drm/Makefile.am
+@@ -7,6 +7,8 @@ AM_CFLAGS = \
+ 
+ noinst_LTLIBRARIES = libradeonwinsys.la
+ 
++libradeonwinsys_la_LIBADD = -ldrm_radeon
++
+ libradeonwinsys_la_SOURCES = $(C_SOURCES)
+ 
+ EXTRA_DIST = meson.build
+-- 
+2.7.4
+

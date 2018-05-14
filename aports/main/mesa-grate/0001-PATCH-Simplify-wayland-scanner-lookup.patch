@@ -1,0 +1,37 @@
+From 385fb195ba20930b6670b2b2a3b9d80baeda4ab3 Mon Sep 17 00:00:00 2001
+From: ryang <decatf@gmail.com>
+Date: Mon, 5 Mar 2018 20:19:08 -0500
+Subject: [PATCH] [PATCH] Simplify wayland-scanner lookup
+
+Don't use pkg-config to lookup the path of a binary that's in the path.
+
+Alternatively we'd have to prefix the path returned by pkg-config with
+PKG_CONFIG_SYSROOT_DIR.
+
+Upstream-Status: Pending
+Signed-off-by: Jussi Kukkonen <jussi.kukkonen@intel.com>
+---
+ configure.ac | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index a4de0eb..0896a82 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -1784,12 +1784,7 @@ if test "x$with_platforms" = xauto; then
+     with_platforms=$with_egl_platforms
+ fi
+ 
+-PKG_CHECK_MODULES([WAYLAND_SCANNER], [wayland-scanner],
+-        WAYLAND_SCANNER=`$PKG_CONFIG --variable=wayland_scanner wayland-scanner`,
+-        WAYLAND_SCANNER='')
+-if test "x$WAYLAND_SCANNER" = x; then
+-    AC_PATH_PROG([WAYLAND_SCANNER], [wayland-scanner], [:])
+-fi
++AC_PATH_PROG([WAYLAND_SCANNER], [wayland-scanner])
+ 
+ PKG_CHECK_EXISTS([wayland-protocols >= $WAYLAND_PROTOCOLS_REQUIRED], [have_wayland_protocols=yes], [have_wayland_protocols=no])
+ if test "x$have_wayland_protocols" = xyes; then
+-- 
+2.7.4
+
