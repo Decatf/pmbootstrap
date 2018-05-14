@@ -34,7 +34,7 @@ replaces="mesa-dricore mesa"
 
 _dri_driverdir=/usr/lib/xorg/modules/dri
 _dri_drivers="r200,radeon,nouveau,swrast"
-_gallium_drivers="r300,r600,radeonsi,nouveau,freedreno,swrast,virgl"
+_gallium_drivers="r300,r600,nouveau,freedreno,swrast,virgl"
 _vulkan_drivers=""
 
 builddir="$srcdir/mesa-$branch"
@@ -85,8 +85,7 @@ build() {
 		--with-vulkan-drivers=${_vulkan_drivers} \
 		--with-llvm-prefix=/usr/lib/llvm$_llvmver \
 		--with-platforms=x11,drm \
-		--enable-llvm \
-		--enable-llvm-shared-libs \
+		--disable-llvm \
 		--enable-shared-glapi \
 		--enable-gbm \
 		--enable-dri \
@@ -246,10 +245,10 @@ _dri() {
 
 	case $n in
 	ati)
-		_mv_dri radeon_dri r200_dri r300_dri r600_dri radeonsi_dri \
-			&& _mv_vdpau r300 r600 radeonsi \
+		_mv_dri radeon_dri r200_dri r300_dri r600_dri \
+			&& _mv_vdpau r300 r600 \
 			&& _mv_gpipe r300 r600 \
-			&& _mv_va r600 radeonsi
+			&& _mv_va r600
 		;;
 	intel)
 		_mv_dri i915_dri i965_dri
