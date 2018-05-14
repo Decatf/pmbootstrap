@@ -1,0 +1,39 @@
+pkgname=libvdpau-tegra
+pkgver=1.0.0
+pkgrel=0
+pkgdesc="VDPAU backend driver for NVIDIA Tegra 20/30 SoC's"
+url="https://github.com/grate-driver/libvdpau-tegra"
+arch="armhf"
+license="GPL2"
+subpackages=""
+depends=
+makedepends="util-macros libtool m4 automake autoconf bison flex
+	libx11-dev libxext-dev xextproto libxfixes-dev
+	dri2proto libvdpau-dev pixman-dev libdrm-grate-dev libxv-dev"
+_rev=6a17ba7ad840e64372dc00db29a9d88a6c02c4c9
+source="https://github.com/grate-driver/libvdpau-tegra/archive/$_rev.tar.gz
+	"
+
+# builddir="$srcdir"/$pkgname-$pkgver
+builddir="$srcdir"/$pkgname-$_rev
+
+build() {
+	cd "$builddir"
+	./autogen.sh \
+		--build=$CBUILD \
+		--host=$CHOST \
+		--prefix=/usr
+	make
+}
+
+check() {
+	cd "$builddir"
+	make check
+}
+
+package() {
+	cd "$builddir"
+	make DESTDIR="$pkgdir" install
+}
+
+sha512sums="1c6e800cd3cda91048a2dd96f580032116d87b0e6b8a2b22bb40c81d24021841f79776697888bd565dd9ea4b6357cd93222c8adc51450e22e1c3f97c844c01ad  6a17ba7ad840e64372dc00db29a9d88a6c02c4c9.tar.gz"
