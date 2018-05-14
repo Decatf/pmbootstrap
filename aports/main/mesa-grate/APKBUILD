@@ -14,7 +14,6 @@ subpackages="$pkgname-dev
 	$pkgname-dri-virtio:_dri
 	$pkgname-glapi $pkgname-egl $pkgname-gl $pkgname-gles
 	$pkgname-xatracker $pkgname-osmesa $pkgname-gbm
-	$pkgname-vulkan-ati:_vulkan
 	"
 _llvmver=5
 depends_dev="libdrm-dev dri2proto libxext-dev libxdamage-dev libxcb-dev glproto
@@ -36,7 +35,7 @@ replaces="mesa-dricore mesa"
 _dri_driverdir=/usr/lib/xorg/modules/dri
 _dri_drivers="r200,radeon,nouveau,swrast"
 _gallium_drivers="r300,r600,radeonsi,nouveau,freedreno,swrast,virgl"
-_vulkan_drivers="radeon"
+_vulkan_drivers=""
 
 builddir="$srcdir/mesa-$branch"
 
