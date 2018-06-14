@@ -11,7 +11,8 @@ makedepends="util-macros libtool m4 automake autoconf
 	bluez-dev cython-dev glib-dev intltool linux-headers python2-dev py-gobject3-dev"
 _rev=650724894580d5d5583d2dc3980a4a20de8109dd
 source="https://github.com/blueman-project/blueman/archive/$_rev.tar.gz
-	0001-Fix-building-on-musl-libc.patch"
+	0001-Fix-building-on-musl-libc.patch
+	signed-char.patch"
 
 builddir="$srcdir"/$pkgname-$_rev
 
@@ -55,4 +56,5 @@ package() {
 }
 
 sha512sums="7d42034bee846c7d9118bd851c63b2727d683a294381bf269dc613455c07accbb4aa58b55827595c85abc7c1e1108ec42a47affb5c8694b0bd97171bde3c270a  650724894580d5d5583d2dc3980a4a20de8109dd.tar.gz
-f7a7595b1bdb58f96328066afe4a2a4cc7ebe75ee055057b3b588c8928517a9cb5328b85ea617fa01e1a2dbad18a5a2b399774fb76ca73cab0183cfcb49fbb8f  0001-Fix-building-on-musl-libc.patch"
+f7a7595b1bdb58f96328066afe4a2a4cc7ebe75ee055057b3b588c8928517a9cb5328b85ea617fa01e1a2dbad18a5a2b399774fb76ca73cab0183cfcb49fbb8f  0001-Fix-building-on-musl-libc.patch
+372de0632164de28a52c1b3dc970edd56f00e8c91926e57c070e3699ce81a21a5560405f5c9a33c19d60549343b612c98308ab00f7eaaacfd290d674f56973ef  signed-char.patch"
