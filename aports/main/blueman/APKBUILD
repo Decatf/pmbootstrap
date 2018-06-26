@@ -1,12 +1,12 @@
 pkgname=blueman
 pkgver=2.0.5
-pkgrel=1
+pkgrel=2
 pkgdesc="GTK+ Bluetooth Manager"
 url="https://github.com/blueman-project/blueman"
 arch="all"
 license="GPL"
 subpackages="$pkgname-dev $pkgname-doc"
-depends="bluez bluez-libs gdk-pixbuf glib gir1.0-notify-0.7 gnome-icon-theme gtk+3.0 libnotify  python2 py2-cairo py-dbus py-gobject3"
+depends="bluez bluez-libs gdk-pixbuf glib gnome-icon-theme gtk+3.0 libnotify  python2 py2-cairo py-dbus py-gobject3"
 makedepends="util-macros libtool m4 automake autoconf
 	bluez-dev cython-dev glib-dev intltool linux-headers python2-dev py-gobject3-dev"
 _rev=650724894580d5d5583d2dc3980a4a20de8109dd
