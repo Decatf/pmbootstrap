@@ -171,6 +171,10 @@ def command_qemu(args, arch, device, img_path, spice_enabled):
     else:
         logging.info("WARNING: Qemu is not using KVM and will run slower!")
 
+    if args.qemu_devices:
+        for device in args.qemu_devices:
+            command += ["-device", device]
+
     # 2D acceleration support via QXL/SPICE or virtio
     if spice_enabled:
         command += ["-vga", "qxl"]

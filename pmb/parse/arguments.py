@@ -124,6 +124,9 @@ def arguments_qemu(subparser):
     display.add_argument("--display", dest="qemu_display", const="sdl,gl=on",
                          help="Qemu's display parameter (default: sdl,gl=on)",
                          default="sdl,gl=on", nargs="?")
+
+    ret.add_argument("--device", dest="qemu_devices", nargs="*",
+                     help="Qemu's device parameter")
     return ret
 
 
