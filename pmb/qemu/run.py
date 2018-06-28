@@ -236,6 +236,18 @@ def sigterm_handler(number, frame):
                        " and killed the Qemu VM it was running.")
 
 
+def install_depends(args, arch):
+    """
+    Install any necessary qemu dependencies in native chroot
+    """
+    if is_native(args) and not args.host_qemu:
+        depends = ["qemu", "qemu-system-" + arch, "qemu-ui-sdl", "qemu-ui-gtk",
+                   "mesa-gl", "mesa-egl", "mesa-dri-ati", "mesa-dri-freedreno",
+                   "mesa-dri-intel", "mesa-dri-nouveau", "mesa-dri-swrast",
+                   "mesa-dri-virtio", "mesa-dri-vmwgfx"]
+        pmb.chroot.apk.install(args, depends)
+
+
 def run(args):
     """
     Run a postmarketOS image in qemu
@@ -244,6 +256,7 @@ def run(args):
     arch = pmb.parse.arch.uname_to_qemu(args.arch_native)
     if args.arch:
         arch = pmb.parse.arch.uname_to_qemu(args.arch)
+    install_depends(args, arch)
     device = pmb.parse.arch.qemu_to_pmos_device(arch)
     img_path = system_image(args, device)
     logging.info("Running postmarketOS in QEMU VM (" + arch + ")")
