@@ -115,7 +115,6 @@ def command_qemu(args, arch, device, img_path, spice_enabled):
     """
     Generate the full qemu command with arguments to run postmarketOS
     """
-    qemu_bin = which_qemu(args, arch)
     deviceinfo = pmb.parse.deviceinfo(args, device=device)
     cmdline = deviceinfo["kernel_cmdline"]
     if args.cmdline:
@@ -131,7 +130,25 @@ def command_qemu(args, arch, device, img_path, spice_enabled):
         flavor = args.flavor
     else:
         flavor = pmb.chroot.other.kernel_flavors_installed(args, suffix)[0]
-    command = [qemu_bin]
+
+    native = is_native(args)
+    if native and not args.host_qemu:
+        rootfs_native = args.work + "/chroot_native"
+        env = {"QEMU_MODULE_PATH": rootfs_native + "/usr/lib/qemu",
+               "GBM_DRIVERS_PATH": rootfs_native + "/usr/lib/xorg/modules/dri",
+               "LIBGL_DRIVERS_PATH": rootfs_native + "/usr/lib/xorg/modules/dri"}
+
+        command = [rootfs_native + "/lib/ld-musl-" +
+                   args.arch_native + ".so.1"]
+        command += ["--library-path=" + rootfs_native + "/lib:" +
+                    rootfs_native + "/usr/lib"]
+        command += [rootfs_native + "/usr/bin/qemu-system-" + arch]
+        command += ["-L", rootfs_native + "/usr/share/qemu/"]
+    else:
+        qemu_bin = which_qemu(args, arch)
+        env = {}
+        command = [qemu_bin]
+
     command += ["-kernel", rootfs + "/boot/vmlinuz-" + flavor]
     command += ["-initrd", rootfs + "/boot/initramfs-" + flavor]
     command += ["-append", '"' + cmdline + '"']
@@ -174,7 +191,6 @@ def command_qemu(args, arch, device, img_path, spice_enabled):
         raise RuntimeError("Architecture {} not supported by this command yet.".format(arch))
 
     # Kernel Virtual Machine (KVM) support
-    native = is_native(args)
     if native and os.path.exists("/dev/kvm"):
         command += ["-enable-kvm"]
     else:
@@ -191,7 +207,7 @@ def command_qemu(args, arch, device, img_path, spice_enabled):
             command += ["-vga", "virtio"]
         command += ["-display", args.qemu_display]
 
-    return command
+    return (command, env)
 
 
 def resize_image(args, img_size_new, img_path):
@@ -256,15 +272,15 @@ def run(args):
     arch = pmb.parse.arch.uname_to_qemu(args.arch_native)
     if args.arch:
         arch = pmb.parse.arch.uname_to_qemu(args.arch)
-    install_depends(args, arch)
     device = pmb.parse.arch.qemu_to_pmos_device(arch)
     img_path = system_image(args, device)
+    install_depends(args, arch)
     logging.info("Running postmarketOS in QEMU VM (" + arch + ")")
 
     # Get the Qemu and spice commands
     spice = command_spice(args)
     spice_enabled = True if spice else False
-    qemu = command_qemu(args, arch, device, img_path, spice_enabled)
+    qemu, env = command_qemu(args, arch, device, img_path, spice_enabled)
 
     # Workaround: Qemu runs as local user and needs write permissions in the
     # system image, which is owned by root
@@ -288,9 +304,10 @@ def run(args):
     process = None
     try:
         signal.signal(signal.SIGTERM, sigterm_handler)
-        process = pmb.helpers.run.user(args, qemu, background=spice_enabled)
+        process = pmb.helpers.run.user(args, qemu,
+                                       background=spice_enabled, env=env)
         if spice:
-            pmb.helpers.run.user(args, spice)
+            pmb.helpers.run.user(args, spice, env=env)
     except KeyboardInterrupt:
         # Don't show a trace when pressing ^C
         pass
