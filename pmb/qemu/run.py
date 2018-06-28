@@ -98,6 +98,19 @@ def command_spice(args):
     return ["remote-viewer", "spice://127.0.0.1?port=" + args.spice_port]
 
 
+def is_native(args):
+    """
+    Check if guest system arch is native
+    :returns: True if guest system arch is the same as the host system arch
+    """
+    native = True
+    if args.arch:
+        arch1 = pmb.parse.arch.uname_to_qemu(args.arch_native)
+        arch2 = pmb.parse.arch.uname_to_qemu(args.arch)
+        native = (arch1 == arch2)
+    return native
+
+
 def command_qemu(args, arch, device, img_path, spice_enabled):
     """
     Generate the full qemu command with arguments to run postmarketOS
@@ -161,11 +174,7 @@ def command_qemu(args, arch, device, img_path, spice_enabled):
         raise RuntimeError("Architecture {} not supported by this command yet.".format(arch))
 
     # Kernel Virtual Machine (KVM) support
-    native = True
-    if args.arch:
-        arch1 = pmb.parse.arch.uname_to_qemu(args.arch_native)
-        arch2 = pmb.parse.arch.uname_to_qemu(args.arch)
-        native = (arch1 == arch2)
+    native = is_native(args)
     if native and os.path.exists("/dev/kvm"):
         command += ["-enable-kvm"]
     else:
