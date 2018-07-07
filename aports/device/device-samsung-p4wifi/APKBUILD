@@ -7,8 +7,25 @@ url="https://postmarketos.org"
 license="MIT"
 arch="noarch"
 options="!check"
-depends="postmarketos-base linux-samsung-p4wifi mkbootimg mesa-dri-swrast alsa-utils"
-makedepends="devicepkg-dev"
+depends="postmarketos-base
+	linux-samsung-p4wifi
+	mkbootimg
+	alsa-utils
+	libdrm-grate
+	mesa-grate
+	mesa-grate-dri-swrast
+	mesa-grate-dri-tegra
+	mesa-grate-dev
+	mesa-grate-egl
+	mesa-grate-gbm
+	mesa-grate-gl
+	mesa-grate-glapi
+	mesa-grate-gles
+	mesa-grate-osmesa
+	mesa-grate-xatracker
+	xf86-video-opentegra
+	libvdpau-tegra"
+makedepends="devicepkg-dev libdrm-grate-dev mesa-grate-dev"
 subpackages="$pkgname-nonfree-firmware:nonfree_firmware"
 source="deviceinfo
 	modules-load.conf
