@@ -2,7 +2,7 @@
 pkgname="device-samsung-p4wifi"
 pkgdesc="Galaxy Tab 10.1"
 pkgver=0.1
-pkgrel=5
+pkgrel=7
 url="https://postmarketos.org"
 license="MIT"
 arch="noarch"
@@ -14,7 +14,7 @@ depends="postmarketos-base
 	libdrm-grate
 	mesa-grate
 	mesa-grate-dri-swrast
-	mesa-grate-dri-tegra
+	mesa-grate-dri-grate
 	mesa-grate-dev
 	mesa-grate-egl
 	mesa-grate-gbm
