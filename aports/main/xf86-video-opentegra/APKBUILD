@@ -1,6 +1,6 @@
 pkgname=xf86-video-opentegra
 pkgver=0.6.0
-pkgrel=0
+pkgrel=1
 pkgdesc="X.Org driver for NVIDIA tegra"
 url="https://github.com/grate-driver/"
 arch="armhf"
@@ -9,7 +9,7 @@ subpackages="$pkgname-doc"
 depends=
 makedepends="libdrm-grate-dev xorg-server-dev xproto fontsproto libdrm-dev util-macros
 	libtool m4 automake autoconf bison flex"
-branch=3b46f6a0bee8c79ef0504a9dc9ff2c722736d25f
+branch=6b3f629d5e3b97d898ce51e537a011adae4d9525
 source="https://github.com/grate-driver/xf86-video-opentegra/archive/$branch.tar.gz
 	"
 
@@ -36,4 +36,4 @@ package() {
 	make DESTDIR="$pkgdir" install
 	install -Dm644 COPYING "$pkgdir"/usr/share/licenses/$pkgname/COPYING
 }
-sha512sums="37913f24952e1fb465bc4eee4f74dc5bf6ca89feb3f78845f333f3014f4dc4b44e89a23be3d00133196e015f26d1772ee32d5a1bdd4d64291cb19405020ac259  3b46f6a0bee8c79ef0504a9dc9ff2c722736d25f.tar.gz"
+sha512sums="3472c8c46cf98cfd48ddfe085f93f66b33174caa273295c399494b6d7263700fdd99e3f3acf6d3bc85ad9233e619934e341820337f03be154902cee12d79146c  6b3f629d5e3b97d898ce51e537a011adae4d9525.tar.gz"
